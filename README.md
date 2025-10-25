@@ -251,6 +251,7 @@ interface OutboxEntry {
 - **[docs/SLA.md](./docs/SLA.md)** - Service Level Objectives (SLOs) and metrics
 - **[docs/RESEARCH.md](./docs/RESEARCH.md)** - Research contributions and academic context
 - **[docs/PAPER.md](./docs/PAPER.md)** - Full academic paper
+- **[docs/LOAD_TESTING.md](./docs/LOAD_TESTING.md)** - Load testing guide with k6
 - **[ROADMAP.md](./ROADMAP.md)** - Development roadmap and milestones
 
 ## Config Presets
