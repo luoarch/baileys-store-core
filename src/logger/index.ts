@@ -19,16 +19,14 @@ export enum LogLevel {
   SILENT = 5,
 }
 
-export interface LogContext {
-  [key: string]: unknown;
-}
+export type LogContext = Record<string, unknown>;
 
 export interface StructuredLogger {
   trace(message: string, context?: LogContext): void;
   debug(message: string, context?: LogContext): void;
   info(message: string, context?: LogContext): void;
   warn(message: string, context?: LogContext): void;
-  error(message: string, error?: Error | unknown, context?: LogContext): void;
+  error(message: string, error?: Error, context?: LogContext): void;
 }
 
 export class ConsoleStructuredLogger implements StructuredLogger {
@@ -76,9 +74,10 @@ export class ConsoleStructuredLogger implements StructuredLogger {
     }
   }
 
-  error(message: string, error?: Error | unknown, context?: LogContext): void {
+  error(message: string, error?: Error, context?: LogContext): void {
     if (this.level <= LogLevel.ERROR) {
-      this.log('ERROR', message, { ...context, error: this.serializeError(error) });
+      const errorContext = error ? { ...context, error: this.serializeError(error) } : context;
+      this.log('ERROR', message, errorContext);
     }
   }
 
@@ -100,26 +99,37 @@ export class ConsoleStructuredLogger implements StructuredLogger {
       : this.formatPretty(logEntry);
 
     // Use appropriate console method
+     
     switch (level) {
       case 'ERROR':
+         
         console.error(output);
         break;
       case 'WARN':
+         
         console.warn(output);
         break;
       default:
+        // eslint-disable-next-line no-console
         console.log(output);
     }
   }
 
   private formatPretty(entry: Record<string, unknown>): string {
+    const timestamp = typeof entry.timestamp === 'string' ? entry.timestamp : '';
+    const level = typeof entry.level === 'string' ? entry.level : '';
+    const message = typeof entry.message === 'string' ? entry.message : '';
+    
     const lines = [
-      `${entry.timestamp} [${entry.level}] ${entry.message}`,
+      `${timestamp} [${level}] ${message}`,
     ];
     
     // Add correlationId if present
     if (entry.correlationId) {
-      lines.push(`  correlationId: ${entry.correlationId}`);
+      const correlationId = typeof entry.correlationId === 'string' 
+        ? entry.correlationId 
+        : JSON.stringify(entry.correlationId);
+      lines.push('  correlationId: ' + correlationId);
     }
     
     // Add all other context fields (excluding metadata)
@@ -175,9 +185,19 @@ export class ConsoleStructuredLogger implements StructuredLogger {
 }
 
 export class NullLogger implements StructuredLogger {
-  trace(): void {}
-  debug(): void {}
-  info(): void {}
-  warn(): void {}
-  error(): void {}
+  trace(_message: string, _context?: LogContext): void {
+    // Intentionally empty - no-op implementation
+  }
+  debug(_message: string, _context?: LogContext): void {
+    // Intentionally empty - no-op implementation
+  }
+  info(_message: string, _context?: LogContext): void {
+    // Intentionally empty - no-op implementation
+  }
+  warn(_message: string, _context?: LogContext): void {
+    // Intentionally empty - no-op implementation
+  }
+  error(_message: string, _error?: Error, _context?: LogContext): void {
+    // Intentionally empty - no-op implementation
+  }
 }

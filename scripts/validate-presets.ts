@@ -7,7 +7,12 @@
  * Exits with code 0 if all presets are valid, 1 otherwise.
  */
 
-import { DEVELOPMENT, PRODUCTION, TESTING, validatePreset } from '../src/config/presets.js';
+import {
+  DEVELOPMENT,
+  PRODUCTION,
+  TESTING,
+  validatePreset,
+} from '../src/config/presets.js';
 
 // Colors for terminal output
 const colors = {
@@ -21,10 +26,10 @@ const colors = {
 /**
  * Validate a preset
  */
-function validatePresetWithName(presetName: string, preset: unknown) {
+function validatePresetWithName(presetName, preset) {
   console.log(`\n${colors.blue}Validating ${presetName} preset...${colors.reset}`);
   
-  const errors = validatePreset(preset as Parameters<typeof validatePreset>[0]);
+  const errors = validatePreset(preset);
   
   if (errors.length === 0) {
     console.log(`${colors.green}✅ ${presetName} preset is valid${colors.reset}`);
@@ -64,8 +69,6 @@ function main() {
 }
 
 // Run if called directly
-if (import.meta.url === `file://${process.argv[1]}`) {
-  main();
-}
+main();
 
 export { main };

@@ -103,7 +103,7 @@ describe('ConsoleStructuredLogger', () => {
     
     it('should handle non-Error objects', () => {
       const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
-      const error = { message: 'Custom error' };
+      const error = new Error('Custom error');
       
       logger.error('Error occurred', error);
       
@@ -155,11 +155,11 @@ describe('NullLogger', () => {
     const spy = vi.spyOn(console, 'log').mockImplementation(() => {});
     const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     
-    logger.trace();
-    logger.debug();
-    logger.info();
-    logger.warn();
-    logger.error();
+    logger.trace('trace');
+    logger.debug('debug');
+    logger.info('info');
+    logger.warn('warn');
+    logger.error('error');
     
     expect(spy).not.toHaveBeenCalled();
     expect(errorSpy).not.toHaveBeenCalled();

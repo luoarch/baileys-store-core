@@ -21,6 +21,26 @@ export default tseslint.config(
 
   // 2) Base configs
   eslint.configs.recommended,
+  
+  // 2.5) Scripts JS - Node environment
+  {
+    files: ['scripts/**/*.js'],
+    languageOptions: {
+      globals: {
+        console: 'readonly',
+        process: 'readonly',
+        Buffer: 'readonly',
+        __dirname: 'readonly',
+        __filename: 'readonly',
+        require: 'readonly',
+        module: 'readonly',
+        exports: 'readonly',
+      },
+    },
+    rules: {
+      'no-undef': 'off',
+    },
+  },
 
   // 3) Strict type-checked for TypeScript source files ONLY
   {
@@ -145,6 +165,13 @@ export default tseslint.config(
     files: ['scripts/**/*.ts', 'scripts/**/*.js', 'test-scripts/**/*.ts'],
     extends: [tseslint.configs.disableTypeChecked],
     languageOptions: {
+      globals: {
+        console: 'readonly',
+        process: 'readonly',
+        Buffer: 'readonly',
+        __dirname: 'readonly',
+        __filename: 'readonly',
+      },
       parserOptions: {
         projectService: false,
         parser: '@typescript-eslint/parser',
