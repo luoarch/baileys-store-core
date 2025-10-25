@@ -205,7 +205,7 @@
     "@testcontainers/redis": "^11.7.2",
     "@types/express": "^5.0.3",
     "@types/ioredis-mock": "^8.0.0",
-    "@types/node": "^22.10.0",
+    "@types/node": "^24.9.1",
     "@types/opossum": "^8.1.9",
     "@vitest/coverage-v8": "^4.0.3",
     "@vitest/ui": "^4.0.3",
