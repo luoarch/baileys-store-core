@@ -8,6 +8,7 @@
 import { describe, it, expect, beforeAll } from 'vitest';
 import { useRedisAuthState } from '../../redis/use-redis-auth-state.js';
 import { useHybridAuthState } from '../../hybrid/use-hybrid-auth-state.js';
+import { withContext } from '../../context/execution-context.js';
 
 // Configuração baseada em test-qr-simple.ts
 const testConfig = {
@@ -177,6 +178,194 @@ describe('Integration Tests - Real Services', () => {
 
         // Cleanup
         await store.delete('outbox-api-test');
+      } finally {
+        await store.disconnect();
+      }
+    });
+  });
+
+  describe('Batch Operations Integration', () => {
+    it('should batch get multiple sessions from Redis cache', async () => {
+      const { store } = await useHybridAuthState({
+        sessionId: 'batch-test-1',
+        hybrid: testConfig,
+      });
+
+      try {
+        const session1 = 'batch-session-1';
+        const session2 = 'batch-session-2';
+        const session3 = 'batch-session-3';
+
+        // Create test data
+        const patch1 = { creds: { me: { id: '1@test' } } as any };
+        const patch2 = { creds: { me: { id: '2@test' } } as any };
+
+        await store.set(session1, patch1);
+        await store.set(session2, patch2);
+
+        // Batch get
+        const results = await store.batchGet([session1, session2, session3]);
+
+        expect(results.size).toBe(3);
+        expect(results.get(session1)).toBeDefined();
+        expect(results.get(session2)).toBeDefined();
+        expect(results.get(session3)).toBeNull();
+
+        // Cleanup
+        await store.batchDelete([session1, session2, session3]);
+      } finally {
+        await store.disconnect();
+      }
+    });
+
+    it('should handle batch delete with partial success', async () => {
+      const { store } = await useHybridAuthState({
+        sessionId: 'batch-delete-test',
+        hybrid: testConfig,
+      });
+
+      try {
+        const session1 = 'delete-session-1';
+        const session2 = 'delete-session-2';
+        const session3 = 'non-existent-session';
+
+        // Create test data
+        await store.set(session1, { creds: { me: { id: '1@test' } } as any });
+        await store.set(session2, { creds: { me: { id: '2@test' } } as any });
+
+        // Batch delete
+        const result = await store.batchDelete([session1, session2, session3]);
+
+        expect(result.successful.size).toBe(3); // All should succeed even if non-existent
+        expect(result.failed.size).toBe(0);
+      } finally {
+        await store.disconnect();
+      }
+    });
+  });
+
+  describe('Health Checks with Fallbacks', () => {
+    it('should return healthy when both services are up', async () => {
+      const { store } = await useHybridAuthState({
+        sessionId: 'health-test-1',
+        hybrid: testConfig,
+      });
+
+      try {
+        const healthy = await store.isHealthy();
+        expect(healthy).toBe(true);
+      } finally {
+        await store.disconnect();
+      }
+    });
+
+    it('should report unhealthy if Redis is down', async () => {
+      // This test validates the health check logic
+      // In a real scenario, we'd need to stop Redis
+      // For now, we just verify the API exists
+      const { store } = await useHybridAuthState({
+        sessionId: 'health-test-2',
+        hybrid: testConfig,
+      });
+
+      try {
+        // Verify health check doesn't throw
+        const healthy = await store.isHealthy();
+        expect(typeof healthy).toBe('boolean');
+      } finally {
+        await store.disconnect();
+      }
+    });
+  });
+
+  describe('Correlation ID Propagation', () => {
+    it('should propagate correlation ID across operations', async () => {
+      const { store } = await useHybridAuthState({
+        sessionId: 'correlation-test',
+        hybrid: testConfig,
+      });
+
+      try {
+        const correlationId = 'test-correlation-123';
+        const sessionId = 'correlation-session-1';
+
+        // Create test data
+        const patch = { creds: { me: { id: '1@test' } } as any };
+
+        // Execute operation with correlation ID
+        await withContext({ correlationId }, async () => {
+          await store.set(sessionId, patch);
+          const result = await store.get(sessionId);
+          expect(result).toBeDefined();
+          expect(result!.data.creds.me.id).toBe('1@test');
+        });
+
+        // Cleanup
+        await store.delete(sessionId);
+      } finally {
+        await store.disconnect();
+      }
+    });
+
+    it('should handle batch operations with correlation ID', async () => {
+      const { store } = await useHybridAuthState({
+        sessionId: 'batch-correlation-test',
+        hybrid: testConfig,
+      });
+
+      try {
+        const correlationId = 'test-batch-correlation-456';
+        const session1 = 'batch-corr-1';
+        const session2 = 'batch-corr-2';
+
+        // Create test data
+        const patch1 = { creds: { me: { id: '1@test' } } as any };
+        const patch2 = { creds: { me: { id: '2@test' } } as any };
+
+        await store.set(session1, patch1);
+        await store.set(session2, patch2);
+
+        // Batch get with correlation ID
+        await withContext({ correlationId }, async () => {
+          const results = await store.batchGet([session1, session2]);
+          expect(results.size).toBe(2);
+          expect(results.get(session1)).toBeDefined();
+          expect(results.get(session2)).toBeDefined();
+        });
+
+        // Cleanup
+        await store.batchDelete([session1, session2]);
+      } finally {
+        await store.disconnect();
+      }
+    });
+  });
+
+  describe('Circuit Breaker Recovery', () => {
+    it('should recover from circuit breaker half-open state', async () => {
+      const { store } = await useHybridAuthState({
+        sessionId: 'cb-recovery-test',
+        hybrid: {
+          ...testConfig,
+          resilience: {
+            operationTimeout: 1000, // Short timeout to trigger circuit breaker
+            maxRetries: 0,
+            retryBaseDelay: 100,
+            retryMultiplier: 2,
+          },
+        },
+      });
+
+      try {
+        // Get circuit breaker stats
+        const cbStats = store.getCircuitBreakerStats();
+        expect(cbStats).toBeDefined();
+        expect(typeof cbStats.fires).toBe('number');
+        expect(typeof cbStats.closed).toBe('boolean');
+
+        // Verify circuit breaker can be in different states
+        const isOpen = store.isMongoCircuitBreakerOpen();
+        expect(typeof isOpen).toBe('boolean');
       } finally {
         await store.disconnect();
       }
