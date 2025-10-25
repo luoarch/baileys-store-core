@@ -1,0 +1,51 @@
+# Source files
+src/
+__tests__/
+test-scripts/
+examples/
+
+# Build configuration
+tsconfig.json
+tsup.config.ts
+vitest.config.ts
+vitest.integration.config.ts
+vitest.e2e.config.ts
+eslint.config.ts
+
+# Development files
+.env*
+!.env.example
+.nvmrc
+.github/
+.vscode/
+
+# Test files
+*.test.ts
+coverage/
+
+# Documentation (keep docs/ for academic users)
+README_PROGRESS.md
+STATUS.md
+*.plan.md
+
+# Logs and temporary files
+logs/
+*.log
+*.pid
+*.seed
+*.pid.lock
+
+# Dependencies
+node_modules/
+yarn.lock
+package-lock.json
+
+# Build artifacts (keep dist/)
+baileys_auth_info/
+
+# Misc
+.DS_Store
+*.swp
+*.swo
+*~
+

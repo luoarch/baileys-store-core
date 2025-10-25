@@ -1,0 +1,246 @@
+{
+  "name": "@luoarch/baileys-store-core",
+  "version": "1.0.0-rc.1",
+  "description": "Universal authentication state management for Baileys v7.0+ with Redis, MongoDB, and hybrid storage support",
+  "type": "module",
+  "sideEffects": false,
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
+    },
+    "./redis": {
+      "import": {
+        "types": "./dist/redis/index.d.ts",
+        "default": "./dist/redis/index.js"
+      },
+      "require": {
+        "types": "./dist/redis/index.d.cts",
+        "default": "./dist/redis/index.cjs"
+      }
+    },
+    "./mongodb": {
+      "import": {
+        "types": "./dist/mongodb/index.d.ts",
+        "default": "./dist/mongodb/index.js"
+      },
+      "require": {
+        "types": "./dist/mongodb/index.d.cts",
+        "default": "./dist/mongodb/index.cjs"
+      }
+    },
+    "./hybrid": {
+      "import": {
+        "types": "./dist/hybrid/index.d.ts",
+        "default": "./dist/hybrid/index.js"
+      },
+      "require": {
+        "types": "./dist/hybrid/index.d.cts",
+        "default": "./dist/hybrid/index.cjs"
+      }
+    },
+    "./types": {
+      "import": {
+        "types": "./dist/types/index.d.ts",
+        "default": "./dist/types/index.js"
+      },
+      "require": {
+        "types": "./dist/types/index.d.cts",
+        "default": "./dist/types/index.cjs"
+      }
+    },
+    "./storage": {
+      "import": {
+        "types": "./dist/storage/index.d.ts",
+        "default": "./dist/storage/index.js"
+      },
+      "require": {
+        "types": "./dist/storage/index.d.cts",
+        "default": "./dist/storage/index.cjs"
+      }
+    },
+    "./crypto": {
+      "import": {
+        "types": "./dist/crypto/index.d.ts",
+        "default": "./dist/crypto/index.js"
+      },
+      "require": {
+        "types": "./dist/crypto/index.d.cts",
+        "default": "./dist/crypto/index.cjs"
+      }
+    },
+    "./metrics": {
+      "import": {
+        "types": "./dist/metrics/index.d.ts",
+        "default": "./dist/metrics/index.js"
+      },
+      "require": {
+        "types": "./dist/metrics/index.d.cts",
+        "default": "./dist/metrics/index.cjs"
+      }
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE",
+    "CITATION.cff",
+    "docs/PAPER.md",
+    "docs/REFERENCES.bib"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "test": "vitest run",
+    "test:unit": "vitest run --exclude='**/*.e2e.test.ts'",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "test:ci": "vitest run --exclude='**/*.e2e.test.ts' --run",
+    "test:ui": "vitest --ui",
+    "test:integration": "vitest run --config vitest.integration.config.ts",
+    "test:e2e": "vitest run --config vitest.e2e.config.ts",
+    "test:redis": "yarn build && tsx test-scripts/test-redis-detailed.ts",
+    "test:mongodb": "yarn build && tsx test-scripts/test-mongodb-detailed.ts",
+    "test:hybrid": "yarn build && tsx test-scripts/test-hybrid-detailed.ts",
+    "test:interactive": "yarn build && tsx test-scripts/test-all.ts",
+    "test:qr": "yarn build && tsx test-scripts/test-qr-simple.ts",
+    "debug:serialization": "yarn build && tsx test-scripts/debug-serialization.ts",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "lint:check": "eslint . --max-warnings 0",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf dist",
+    "prepublishOnly": "yarn clean && yarn build && yarn test && yarn lint && npm pack --dry-run",
+    "prepare": "husky"
+  },
+  "lint-staged": {
+    "*.{ts,tsx}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{json,md,yml,yaml}": [
+      "prettier --write"
+    ]
+  },
+  "keywords": [
+    "baileys",
+    "whatsapp",
+    "authentication",
+    "redis",
+    "mongodb",
+    "storage",
+    "session",
+    "multi-device",
+    "baileys-v7",
+    "enterprise",
+    "typescript",
+    "auth-state",
+    "circuit-breaker",
+    "outbox-pattern",
+    "prometheus",
+    "hybrid-storage",
+    "whatsapp-web",
+    "signal-protocol",
+    "release-candidate"
+  ],
+  "author": {
+    "name": "Lucas Moraes",
+    "email": "luoarch@proton.me"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/luoarch/baileys-store-core.git"
+  },
+  "bugs": {
+    "url": "https://github.com/luoarch/baileys-store-core/issues"
+  },
+  "homepage": "https://github.com/luoarch/baileys-store-core#readme",
+  "peerDependencies": {
+    "@whiskeysockets/baileys": ">=7.0.0-rc.6",
+    "ioredis": "^5.8.2",
+    "mongodb": "^6.20.0"
+  },
+  "peerDependenciesMeta": {
+    "ioredis": {
+      "optional": true
+    },
+    "mongodb": {
+      "optional": true
+    },
+    "sharp": {
+      "optional": true
+    }
+  },
+  "dependencies": {
+    "@hapi/boom": "^10.0.1",
+    "@napi-rs/snappy": "^1.0.2",
+    "async-mutex": "^0.5.0",
+    "opossum": "^9.0.0",
+    "prom-client": "^15.1.0",
+    "tweetnacl": "^1.0.3",
+    "zod": "^3.22.4"
+  },
+  "devDependencies": {
+    "@commitlint/cli": "^20.0.0",
+    "@commitlint/config-conventional": "^20.0.0",
+    "@eslint/js": "^9.38.0",
+    "@hapi/boom": "^10.0.1",
+    "@semantic-release/changelog": "^6.0.3",
+    "@semantic-release/git": "^10.0.1",
+    "@semantic-release/npm": "^13.1.1",
+    "@testcontainers/mongodb": "^11.7.2",
+    "@testcontainers/redis": "^11.7.2",
+    "@types/express": "^5.0.3",
+    "@types/ioredis-mock": "^8.0.0",
+    "@types/node": "^24.9.1",
+    "@types/opossum": "^8.1.9",
+    "@vitest/coverage-v8": "^4.0.3",
+    "@vitest/ui": "^4.0.3",
+    "@whiskeysockets/baileys": "7.0.0-rc.6",
+    "bibtex-tidy": "^1.14.0",
+    "bullmq": "^5.61.2",
+    "dotenv": "^17.2.3",
+    "eslint": "^9.38.0",
+    "express": "^5.1.0",
+    "fast-check": "^4.3.0",
+    "husky": "^9.1.7",
+    "ioredis-mock": "^8.9.0",
+    "kafkajs": "^2.2.4",
+    "lint-staged": "^16.2.6",
+    "mongodb-memory-server": "^10.2.3",
+    "prettier": "^3.6.2",
+    "qrcode-terminal": "^0.12.0",
+    "semantic-release": "^25.0.1",
+    "sharp": "^0.34.4",
+    "tsup": "^8.5.0",
+    "tsx": "^4.20.6",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.46.2",
+    "vitest": "^4.0.3"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/",
+    "provenance": true
+  },
+  "funding": {
+    "type": "github",
+    "url": "https://github.com/sponsors/luoarch"
+  }
+}
