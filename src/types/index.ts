@@ -164,7 +164,8 @@ export class NullLogger implements Logger {
 }
 
 /**
- * Console logger implementation
+ * Console logger implementation (legacy)
+ * @deprecated Use StructuredLogger from @baileys-store/core/logger instead
  */
 export class ConsoleLogger implements Logger {
   debug(msg: string, data?: Record<string, unknown>): void {
@@ -181,6 +182,15 @@ export class ConsoleLogger implements Logger {
     console.error(msg, data ?? '');
   }
 }
+
+// Re-export StructuredLogger from logger module
+export {
+  ConsoleStructuredLogger,
+  NullLogger as NullLoggerStructured,
+  LogLevel,
+  type StructuredLogger,
+  type LogContext,
+} from '../logger/index.js';
 
 /**
  * Security configuration
