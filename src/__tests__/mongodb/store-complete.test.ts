@@ -50,6 +50,7 @@ vi.mock('mongodb', () => ({
 // Importar DEPOIS do mock
 import { MongoAuthStore, createMongoStore } from '../../mongodb/store';
 import { StorageError, VersionMismatchError } from '../../types/index';
+import type { AuthPatch } from '../../types/index';
 
 describe('MongoAuthStore - Complete Coverage', () => {
   let store: MongoAuthStore;
@@ -1057,16 +1058,55 @@ describe('MongoAuthStore - Complete Coverage', () => {
       const now = Date.now();
 
       // Adicionar entradas válidas e expiradas usando setCache
-      store.setCache('valid1', {});
-      store.setCache('valid2', {});
+      const validDoc1 = {
+        _id: 'valid1',
+        version: 1,
+        creds: Buffer.from('test').toString('base64'),
+        keys: {},
+        updatedAt: new Date(),
+        createdAt: new Date(),
+        expiresAt: new Date(),
+        fencingToken: 123,
+      };
+      const validDoc2 = {
+        _id: 'valid2',
+        version: 1,
+        creds: Buffer.from('test').toString('base64'),
+        keys: {},
+        updatedAt: new Date(),
+        createdAt: new Date(),
+        expiresAt: new Date(),
+        fencingToken: 123,
+      };
+      const expiredDoc1 = {
+        _id: 'expired1',
+        version: 1,
+        creds: Buffer.from('test').toString('base64'),
+        keys: {},
+        updatedAt: new Date(),
+        createdAt: new Date(),
+        expiresAt: new Date(),
+        fencingToken: 123,
+      };
+      const expiredDoc2 = {
+        _id: 'expired2',
+        version: 1,
+        creds: Buffer.from('test').toString('base64'),
+        keys: {},
+        updatedAt: new Date(),
+        createdAt: new Date(),
+        expiresAt: new Date(),
+        fencingToken: 123,
+      };
 
-      // Simular timestamps antigos usando setCache
-      store.setCache('expired1', {});
-      store.setCache('expired2', {});
+      store.setCache('valid1', validDoc1);
+      store.setCache('valid2', validDoc2);
+      store.setCache('expired1', expiredDoc1);
+      store.setCache('expired2', expiredDoc2);
 
       // Sobrescrever com timestamps antigos
-      documentCache.set('expired1', { doc: {} as any, timestamp: now - 10000 });
-      documentCache.set('expired2', { doc: {} as any, timestamp: now - 20000 });
+      documentCache.set('expired1', { doc: expiredDoc1, timestamp: now - 10000 });
+      documentCache.set('expired2', { doc: expiredDoc2, timestamp: now - 20000 });
 
       store.cleanupCache();
 
@@ -1226,7 +1266,7 @@ describe('MongoAuthStore - Complete Coverage', () => {
       // Garantir que o store está conectado
       await store.connect();
 
-      const versionMismatchError = new VersionMismatchError('Version mismatch', 1, 2);
+      const versionMismatchError = new VersionMismatchError(1, 2);
 
       // Mock do collection.findOneAndUpdate para lançar VersionMismatchError
       mockCollection.findOneAndUpdate.mockRejectedValue(versionMismatchError);

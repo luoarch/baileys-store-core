@@ -575,6 +575,8 @@ describe('CodecService', () => {
       mockSnappy.default = {
         compressSync: vi.fn(),
         uncompressSync: vi.fn(),
+        compress: vi.fn(),
+        uncompress: vi.fn(),
       };
 
       // Testar através do CodecService com snappy
@@ -753,8 +755,8 @@ describe('CodecService', () => {
       const encoded = await codecService.encode(testData);
       const decoded = await codecService.decode<typeof testData>(encoded);
 
-      expect(Buffer.isBuffer(decoded.nestedArray[0][0])).toBe(true);
-      expect(Buffer.isBuffer(decoded.nestedArray[0][1])).toBe(true);
+      expect(Buffer.isBuffer((decoded.nestedArray[0] as any[])?.[0])).toBe(true);
+      expect(Buffer.isBuffer((decoded.nestedArray[0] as any[])?.[1])).toBe(true);
       expect(Buffer.isBuffer(decoded.nestedArray[1])).toBe(true);
     });
   });

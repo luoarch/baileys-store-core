@@ -248,7 +248,7 @@ describe('MongoDB Store Static Functions', () => {
     });
 
     it('deve criar DuplicateKeyError', () => {
-      const error = new Error('Duplicate key');
+      const error = new Error('Duplicate key') as Error & { code: number };
       error.name = 'DuplicateKeyError';
       error.code = 11000;
       expect(error.name).toBe('DuplicateKeyError');
@@ -280,7 +280,7 @@ describe('MongoDB Store Static Functions', () => {
 
       // Simulate cleanup
       const expired = Array.from(cache.entries())
-        .filter(([key, value]) => now - value.timestamp > 300000) // 5 minutes
+        .filter(([, value]) => now - value.timestamp > 300000) // 5 minutes
         .map(([key]) => key);
 
       expired.forEach((key) => cache.delete(key));
@@ -310,11 +310,12 @@ describe('MongoDB Store Static Functions', () => {
     });
 
     it('deve detectar conflito de versão', () => {
-      const currentVersion = 2;
-      const expectedVersion = 1;
+      const currentVersion: number = 2;
+      const expectedVersion: number = 1;
       const hasConflict = currentVersion !== expectedVersion;
 
       expect(hasConflict).toBe(true);
+      expect(currentVersion).toBeGreaterThan(expectedVersion);
     });
 
     it('deve calcular próxima versão', () => {

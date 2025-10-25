@@ -1726,6 +1726,34 @@ describe('HybridAuthStore', () => {
         {
           redisUrl: 'redis://localhost',
           mongoUrl: 'mongodb://localhost',
+          mongoDatabase: 'test',
+          mongoCollection: 'sessions',
+          ttl: {
+            defaultTtl: 30 * 24 * 60 * 60,
+            credsTtl: 30 * 24 * 60 * 60,
+            keysTtl: 30 * 24 * 60 * 60,
+            lockTtl: 5,
+          },
+          masterKey: '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
+          resilience: {
+            operationTimeout: 5000,
+            maxRetries: 3,
+            retryBaseDelay: 100,
+            retryMultiplier: 2,
+          },
+          observability: {
+            enableMetrics: false,
+            enableTracing: false,
+            enableDetailedLogs: false,
+            metricsInterval: 60000,
+          },
+          security: {
+            enableEncryption: false,
+            enableCompression: false,
+            encryptionAlgorithm: 'secretbox' as const,
+            compressionAlgorithm: 'snappy' as const,
+            keyRotationDays: 90,
+          },
         },
       );
       await testStore.connect();
@@ -1750,6 +1778,34 @@ describe('HybridAuthStore', () => {
         {
           redisUrl: 'redis://localhost',
           mongoUrl: 'mongodb://localhost',
+          mongoDatabase: 'test',
+          mongoCollection: 'sessions',
+          ttl: {
+            defaultTtl: 30 * 24 * 60 * 60,
+            credsTtl: 30 * 24 * 60 * 60,
+            keysTtl: 30 * 24 * 60 * 60,
+            lockTtl: 5,
+          },
+          masterKey: '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
+          resilience: {
+            operationTimeout: 5000,
+            maxRetries: 3,
+            retryBaseDelay: 100,
+            retryMultiplier: 2,
+          },
+          observability: {
+            enableMetrics: false,
+            enableTracing: false,
+            enableDetailedLogs: false,
+            metricsInterval: 60000,
+          },
+          security: {
+            enableEncryption: false,
+            enableCompression: false,
+            encryptionAlgorithm: 'secretbox' as const,
+            compressionAlgorithm: 'snappy' as const,
+            keyRotationDays: 90,
+          },
         },
       );
       await testStore.connect();
@@ -1768,6 +1824,34 @@ describe('HybridAuthStore', () => {
       const configWithQueue = {
         redisUrl: 'redis://localhost',
         mongoUrl: 'mongodb://localhost',
+        mongoDatabase: 'test',
+        mongoCollection: 'sessions',
+        ttl: {
+          defaultTtl: 30 * 24 * 60 * 60,
+          credsTtl: 30 * 24 * 60 * 60,
+          keysTtl: 30 * 24 * 60 * 60,
+          lockTtl: 5,
+        },
+        masterKey: '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
+        resilience: {
+          operationTimeout: 5000,
+          maxRetries: 3,
+          retryBaseDelay: 100,
+          retryMultiplier: 2,
+        },
+        observability: {
+          enableMetrics: false,
+          enableTracing: false,
+          enableDetailedLogs: false,
+          metricsInterval: 60000,
+        },
+        security: {
+          enableEncryption: false,
+          enableCompression: false,
+          encryptionAlgorithm: 'secretbox' as const,
+          compressionAlgorithm: 'snappy' as const,
+          keyRotationDays: 90,
+        },
         enableWriteBehind: true,
         queue: queue,
       };
@@ -1798,6 +1882,34 @@ describe('HybridAuthStore', () => {
         {
           redisUrl: 'redis://localhost',
           mongoUrl: 'mongodb://localhost',
+          mongoDatabase: 'test',
+          mongoCollection: 'sessions',
+          ttl: {
+            defaultTtl: 30 * 24 * 60 * 60,
+            credsTtl: 30 * 24 * 60 * 60,
+            keysTtl: 30 * 24 * 60 * 60,
+            lockTtl: 5,
+          },
+          masterKey: '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
+          resilience: {
+            operationTimeout: 5000,
+            maxRetries: 3,
+            retryBaseDelay: 100,
+            retryMultiplier: 2,
+          },
+          observability: {
+            enableMetrics: false,
+            enableTracing: false,
+            enableDetailedLogs: false,
+            metricsInterval: 60000,
+          },
+          security: {
+            enableEncryption: false,
+            enableCompression: false,
+            encryptionAlgorithm: 'secretbox' as const,
+            compressionAlgorithm: 'snappy' as const,
+            keyRotationDays: 90,
+          },
         },
       );
       await testStore.connect();
@@ -1821,6 +1933,34 @@ describe('HybridAuthStore', () => {
         {
           redisUrl: 'redis://localhost',
           mongoUrl: 'mongodb://localhost',
+          mongoDatabase: 'test',
+          mongoCollection: 'sessions',
+          ttl: {
+            defaultTtl: 30 * 24 * 60 * 60,
+            credsTtl: 30 * 24 * 60 * 60,
+            keysTtl: 30 * 24 * 60 * 60,
+            lockTtl: 5,
+          },
+          masterKey: '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
+          resilience: {
+            operationTimeout: 5000,
+            maxRetries: 3,
+            retryBaseDelay: 100,
+            retryMultiplier: 2,
+          },
+          observability: {
+            enableMetrics: false,
+            enableTracing: false,
+            enableDetailedLogs: false,
+            metricsInterval: 60000,
+          },
+          security: {
+            enableEncryption: false,
+            enableCompression: false,
+            encryptionAlgorithm: 'secretbox' as const,
+            compressionAlgorithm: 'snappy' as const,
+            keyRotationDays: 90,
+          },
         },
       );
       await testStore.connect();
@@ -1846,6 +1986,34 @@ describe('HybridAuthStore', () => {
         {
           redisUrl: 'redis://localhost',
           mongoUrl: 'mongodb://localhost',
+          mongoDatabase: 'test',
+          mongoCollection: 'sessions',
+          ttl: {
+            defaultTtl: 30 * 24 * 60 * 60,
+            credsTtl: 30 * 24 * 60 * 60,
+            keysTtl: 30 * 24 * 60 * 60,
+            lockTtl: 5,
+          },
+          masterKey: '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
+          resilience: {
+            operationTimeout: 5000,
+            maxRetries: 3,
+            retryBaseDelay: 100,
+            retryMultiplier: 2,
+          },
+          observability: {
+            enableMetrics: false,
+            enableTracing: false,
+            enableDetailedLogs: false,
+            metricsInterval: 60000,
+          },
+          security: {
+            enableEncryption: false,
+            enableCompression: false,
+            encryptionAlgorithm: 'secretbox' as const,
+            compressionAlgorithm: 'snappy' as const,
+            keyRotationDays: 90,
+          },
         },
       );
       expect(testStore).toBeInstanceOf(HybridAuthStore);
@@ -1867,6 +2035,34 @@ describe('HybridAuthStore', () => {
       store = new HybridAuthStore(redis as any, mongo as any, {
         redisUrl: 'redis://localhost',
         mongoUrl: 'mongodb://localhost',
+        mongoDatabase: 'test',
+        mongoCollection: 'sessions',
+        ttl: {
+          defaultTtl: 30 * 24 * 60 * 60,
+          credsTtl: 30 * 24 * 60 * 60,
+          keysTtl: 30 * 24 * 60 * 60,
+          lockTtl: 5,
+        },
+        masterKey: '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
+        resilience: {
+          operationTimeout: 5000,
+          maxRetries: 3,
+          retryBaseDelay: 100,
+          retryMultiplier: 2,
+        },
+        observability: {
+          enableMetrics: false,
+          enableTracing: false,
+          enableDetailedLogs: false,
+          metricsInterval: 60000,
+        },
+        security: {
+          enableEncryption: false,
+          enableCompression: false,
+          encryptionAlgorithm: 'secretbox' as const,
+          compressionAlgorithm: 'snappy' as const,
+          keyRotationDays: 90,
+        },
         enableWriteBehind: true,
         queue,
       });
@@ -1880,9 +2076,6 @@ describe('HybridAuthStore', () => {
     });
 
     it('deve chamar stopReconciler quando outboxManager existe no disconnect', async () => {
-      // Simular que outboxManager foi inicializado
-      const outboxManager = store.getOutboxStats();
-
       // Mock do outboxManager para verificar se stopReconciler foi chamado
       const mockOutboxManager = {
         stopReconciler: vi.fn(),
@@ -1957,6 +2150,34 @@ describe('HybridAuthStore', () => {
       const writeBehindStore = new HybridAuthStore(redis as any, mongo as any, {
         redisUrl: 'redis://localhost',
         mongoUrl: 'mongodb://localhost',
+        mongoDatabase: 'test',
+        mongoCollection: 'sessions',
+        ttl: {
+          defaultTtl: 30 * 24 * 60 * 60,
+          credsTtl: 30 * 24 * 60 * 60,
+          keysTtl: 30 * 24 * 60 * 60,
+          lockTtl: 5,
+        },
+        masterKey: '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
+        resilience: {
+          operationTimeout: 5000,
+          maxRetries: 3,
+          retryBaseDelay: 100,
+          retryMultiplier: 2,
+        },
+        observability: {
+          enableMetrics: false,
+          enableTracing: false,
+          enableDetailedLogs: false,
+          metricsInterval: 60000,
+        },
+        security: {
+          enableEncryption: false,
+          enableCompression: false,
+          encryptionAlgorithm: 'secretbox' as const,
+          compressionAlgorithm: 'snappy' as const,
+          keyRotationDays: 90,
+        },
         enableWriteBehind: true,
         queue,
       });
@@ -1977,6 +2198,34 @@ describe('HybridAuthStore', () => {
       const noWriteBehindStore = new HybridAuthStore(redis as any, mongo as any, {
         redisUrl: 'redis://localhost',
         mongoUrl: 'mongodb://localhost',
+        mongoDatabase: 'test',
+        mongoCollection: 'sessions',
+        ttl: {
+          defaultTtl: 30 * 24 * 60 * 60,
+          credsTtl: 30 * 24 * 60 * 60,
+          keysTtl: 30 * 24 * 60 * 60,
+          lockTtl: 5,
+        },
+        masterKey: '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
+        resilience: {
+          operationTimeout: 5000,
+          maxRetries: 3,
+          retryBaseDelay: 100,
+          retryMultiplier: 2,
+        },
+        observability: {
+          enableMetrics: false,
+          enableTracing: false,
+          enableDetailedLogs: false,
+          metricsInterval: 60000,
+        },
+        security: {
+          enableEncryption: false,
+          enableCompression: false,
+          encryptionAlgorithm: 'secretbox' as const,
+          compressionAlgorithm: 'snappy' as const,
+          keyRotationDays: 90,
+        },
         enableWriteBehind: false,
         queue,
       });
@@ -1995,6 +2244,34 @@ describe('HybridAuthStore', () => {
       const noQueueStore = new HybridAuthStore(redis as any, mongo as any, {
         redisUrl: 'redis://localhost',
         mongoUrl: 'mongodb://localhost',
+        mongoDatabase: 'test',
+        mongoCollection: 'sessions',
+        ttl: {
+          defaultTtl: 30 * 24 * 60 * 60,
+          credsTtl: 30 * 24 * 60 * 60,
+          keysTtl: 30 * 24 * 60 * 60,
+          lockTtl: 5,
+        },
+        masterKey: '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
+        resilience: {
+          operationTimeout: 5000,
+          maxRetries: 3,
+          retryBaseDelay: 100,
+          retryMultiplier: 2,
+        },
+        observability: {
+          enableMetrics: false,
+          enableTracing: false,
+          enableDetailedLogs: false,
+          metricsInterval: 60000,
+        },
+        security: {
+          enableEncryption: false,
+          enableCompression: false,
+          encryptionAlgorithm: 'secretbox' as const,
+          compressionAlgorithm: 'snappy' as const,
+          keyRotationDays: 90,
+        },
         enableWriteBehind: true,
         // queue não fornecido
       });
