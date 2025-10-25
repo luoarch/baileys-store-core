@@ -41,7 +41,7 @@ Comprehensive test scripts to validate all storage adapters with real WhatsApp c
 ### Test 1: Redis Adapter
 
 ```bash
-yarn tsx test-scripts/test-redis-detailed.ts
+yarn tsx test-scripts/test-redis.ts
 ```
 
 **What it tests**:
@@ -54,14 +54,18 @@ yarn tsx test-scripts/test-redis-detailed.ts
 - ✅ QR code generation
 - ✅ Connection persistence
 - ✅ Credentials auto-save
+- ✅ Auto-cleanup before test
+- ✅ Structured logging with correlationId
 
 **Expected output**:
 
-1. Initialization logs
-2. QR code displayed in terminal
-3. Scan QR with WhatsApp
-4. Connection success message
-5. Credentials saved to Redis
+1. Auto-cleanup initialization
+2. Auth state initialization logs
+3. QR code displayed in terminal
+4. Scan QR with WhatsApp
+5. Automatic reconnection after pairing
+6. Connection success message
+7. Credentials saved to Redis
 
 **Verify**:
 
@@ -73,7 +77,7 @@ redis-cli GET "baileys:auth:test-redis-session:meta"
 ### Test 2: MongoDB Adapter
 
 ```bash
-yarn tsx test-scripts/test-mongodb-detailed.ts
+yarn tsx test-scripts/test-mongodb.ts
 ```
 
 **What it tests**:
@@ -86,13 +90,17 @@ yarn tsx test-scripts/test-mongodb-detailed.ts
 - ✅ Optimistic locking
 - ✅ QR code generation
 - ✅ Connection persistence
+- ✅ Auto-cleanup before test
+- ✅ Structured logging with correlationId
 
 **Expected output**:
 
-1. Initialization logs
-2. QR code displayed
-3. Connection success
-4. Data saved to MongoDB
+1. Auto-cleanup initialization
+2. Auth state initialization logs
+3. QR code displayed
+4. Automatic reconnection after pairing
+5. Connection success
+6. Data saved to MongoDB
 
 **Verify**:
 
@@ -104,7 +112,7 @@ db.auth_sessions.find().pretty()
 ### Test 3: Hybrid Adapter (Redis + MongoDB)
 
 ```bash
-yarn tsx test-scripts/test-hybrid-detailed.ts
+yarn tsx test-scripts/test-hybrid.ts
 ```
 
 **What it tests**:
@@ -117,13 +125,17 @@ yarn tsx test-scripts/test-hybrid-detailed.ts
 - ✅ Data synchronization
 - ✅ Failover handling
 - ✅ QR code generation
+- ✅ Auto-cleanup (both stores)
+- ✅ Structured logging with correlationId
 
 **Expected output**:
 
-1. Both Redis and MongoDB connections
-2. QR code displayed
-3. Connection success
-4. Data written to both stores
+1. Auto-cleanup of both Redis and MongoDB
+2. Both Redis and MongoDB connections
+3. QR code displayed
+4. Automatic reconnection after pairing
+5. Connection success
+6. Data written to both stores
 
 **Verify both stores**:
 
@@ -184,32 +196,56 @@ mongosh baileys_test --eval "db.auth_sessions.find().pretty()"
 
 ## Advanced Testing
 
+### Using the Interactive Test Menu
+
+For a better experience, use the interactive menu:
+
+```bash
+yarn tsx test-scripts/test-all.ts
+```
+
+This provides a menu to:
+
+- Run individual tests
+- Run all tests sequentially
+- Easily switch between adapters
+
 ### Test with Custom Configuration
 
-Create your own test script:
+You can modify the test scripts to use custom configuration:
 
 ```typescript
-import { useHybridAuthState } from '@baileys-store/core/hybrid';
+import { useHybridAuthState } from '../dist/hybrid/index.js';
+import { ConsoleStructuredLogger, LogLevel } from '../dist/logger/index.js';
+import { withContext } from '../dist/context/execution-context.js';
 
-const { state, saveCreds } = await useHybridAuthState({
-  hybrid: {
-    redisUrl: 'redis://custom-host:6379',
-    mongoUrl: 'mongodb://custom-host:27017',
-    mongoDatabase: 'my_database',
-    mongoCollection: 'my_collection',
-    enableWriteBehind: false,
-    ttl: {
-      session: 86400 * 7, // 7 days
-      keys: 86400, // 1 day
+const logger = new ConsoleStructuredLogger('development', { level: LogLevel.DEBUG });
+
+await withContext({ sessionId: 'custom-session' }, async () => {
+  const { state, saveCreds } = await useHybridAuthState({
+    hybrid: {
+      redisUrl: 'redis://custom-host:6379',
+      mongoUrl: 'mongodb://custom-host:27017',
+      mongoDatabase: 'my_database',
+      mongoCollection: 'my_collection',
+      enableWriteBehind: false,
+      ttl: {
+        defaultTtl: 86400 * 7, // 7 days
+        credsTtl: 86400 * 7,
+        keysTtl: 86400, // 1 day
+        lockTtl: 5,
+      },
+      security: {
+        enableEncryption: true,
+        enableCompression: true,
+        keyRotationDays: 30,
+      },
+      masterKey: 'your-secure-key-here',
     },
-    security: {
-      enableEncryption: true,
-      enableCompression: true,
-      keyRotationDays: 30,
-    },
-    masterKey: 'your-secure-key-here',
-  },
-  sessionId: 'custom-session-id',
+    sessionId: 'custom-session-id',
+  });
+
+  logger.info('Custom configuration loaded', { sessionId: 'custom-session-id' });
 });
 ```
 
@@ -247,9 +283,15 @@ const promises = sessions.map((id) =>
 await Promise.all(promises);
 ```
 
-## Cleanup
+## Auto-Cleanup
 
-After testing, clean up test data:
+Each test script now includes automatic cleanup before running:
+
+- **Redis tests**: Automatically removes `baileys:auth:test-redis-session:*` keys
+- **MongoDB tests**: Automatically removes documents with `sessionId: 'test-mongodb-session'`
+- **Hybrid tests**: Automatically cleans both Redis and MongoDB
+
+Manual cleanup is no longer required, but if needed:
 
 ```bash
 # Redis

@@ -68,7 +68,7 @@ async function runAllTests() {
   console.log('🔄 Running all tests sequentially...');
   console.log('═'.repeat(80) + '\n');
 
-  const tests = ['test-redis-detailed.ts', 'test-mongodb-detailed.ts', 'test-hybrid-detailed.ts'];
+  const tests = ['test-redis.ts', 'test-mongodb.ts', 'test-hybrid.ts'];
 
   for (const test of tests) {
     try {
@@ -119,15 +119,15 @@ async function main() {
     try {
       switch (choice.trim()) {
         case '1':
-          await runTest('test-redis-detailed.ts');
+          await runTest('test-redis.ts');
           break;
 
         case '2':
-          await runTest('test-mongodb-detailed.ts');
+          await runTest('test-mongodb.ts');
           break;
 
         case '3':
-          await runTest('test-hybrid-detailed.ts');
+          await runTest('test-hybrid.ts');
           break;
 
         case '4':
