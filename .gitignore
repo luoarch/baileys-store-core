@@ -10,3 +10,8 @@ coverage/
 .vscode/
 .idea/
 
+# Stryker Mutation Testing
+.stryker-tmp/
+reports/mutation/
+mutation-report.html
+

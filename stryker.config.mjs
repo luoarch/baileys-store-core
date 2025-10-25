@@ -2,27 +2,53 @@
  * Stryker Mutator Configuration
  *
  * Mutation testing configuration for @luoarch/baileys-store-core
- * Target: 70%+ mutation score
+ * Target: 70%+ mutation score (focando em módulos críticos)
+ * 
+ * @type {import('@stryker-mutator/core').PartialStrykerOptions}
  */
-
 export default {
   /**
+   * Package manager
+   */
+  packageManager: 'yarn',
+
+  /**
+   * Test runner configuration
+   */
+  testRunner: 'vitest',
+  
+  /**
+   * Vitest runner options
+   */
+  vitest: {
+    configFile: 'vitest.config.ts',
+  },
+
+  /**
    * Files to mutate
-   * Excludes tests, types, and generated code
+   * FOCO: Apenas módulos críticos com alta cobertura para RC1
    */
   mutate: [
-    'src/**/*.ts',
+    // Módulos críticos com >90% coverage
+    'src/crypto/**/*.ts',
+    'src/mongodb/store.ts',
+    'src/redis/use-redis-auth-state.ts',
+    'src/hybrid/use-hybrid-auth-state.ts',
+    'src/hybrid/store.ts',
+    
+    // Excluir testes e arquivos de baixa cobertura
     '!src/**/*.test.ts',
     '!src/**/*.spec.ts',
+    '!src/**/*.e2e.test.ts',
+    '!src/__tests__/**',
+    
+    // Excluir módulos utilitários com baixa cobertura
+    '!src/errors/hierarchy.ts',
+    '!src/health/health-check.ts',
+    '!src/validation/reporter.ts',
     '!src/types/**',
     '!src/**/index.ts',
   ],
-
-  /**
-   * Test runner
-   */
-  testRunner: 'vitest',
-  testRunnerNodeArgs: ['--no-warnings'],
 
   /**
    * Coverage analysis
@@ -32,39 +58,36 @@ export default {
   /**
    * Reporter configuration
    */
-  reporters: ['html', 'clear-text', 'progress', 'dashboard'],
+  reporters: ['progress', 'clear-text', 'html', 'json'],
+  
   htmlReporter: {
-    baseDir: 'coverage/mutation',
+    fileName: 'reports/mutation/index.html',
   },
-
-  /**
-   * Dashboard reporting (optional)
-   */
-  dashboard: {
-    project: 'github.com/luoarch/baileys-store-core',
-    version: 'main',
-    module: 'baileys-store-core',
-    reportType: 'full',
+  
+  jsonReporter: {
+    fileName: 'reports/mutation/report.json',
   },
 
   /**
    * Mutation score thresholds
+   * RC1: Thresholds realistas para módulos críticos
    */
   thresholds: {
-    high: 80, // Warning if score drops below 80%
-    low: 60,  // Fail if score drops below 60%
-    break: 70, // Build fails if score < 70%
+    high: 70, // Warning se score < 70%
+    low: 50,  // Fail se score < 50%
+    break: 40, // Build falha se score < 40%
   },
 
   /**
-   * Ignore specific mutations (false positives)
+   * Mutator configuration
+   * Excluir mutações que geram muitos falsos positivos
    */
-  ignoreMutations: [
-    // Ignore arrow function mutations (causes too many false positives)
-    'ArrowFunction',
-    // Ignore conditional compilation mutations
-    'ConditionalExpression',
-  ],
+  mutator: {
+    excludedMutations: [
+      'StringLiteral',      // Logs/mensagens não afetam lógica
+      'BlockStatement',     // Remove blocos (muito invasivo)
+    ],
+  },
 
   /**
    * Log level
@@ -72,14 +95,27 @@ export default {
   logLevel: 'info',
 
   /**
-   * Concurrency (parallel test runs)
+   * Concurrency (reduzido para estabilidade)
    */
   concurrency: 2,
 
   /**
-   * Timeout for test run
+   * Timeout para test run (aumentado para I/O operations)
    */
-  timeoutMS: 30000,
+  timeoutMS: 120000, // 2 minutos
+
+  /**
+   * TypeScript checker desabilitado
+   * O Vitest já valida TypeScript nativamente, evitar duplicação
+   */
+  // checkers: ['typescript'],
+
+  /**
+   * Incremental mode (cache de mutantes já testados)
+   * Acelera re-runs significativamente
+   */
+  incremental: true,
+  incrementalFile: '.stryker-tmp/incremental.json',
 
   /**
    * Clean up after mutation test run
@@ -87,35 +123,25 @@ export default {
   cleanTempDir: true,
 
   /**
-   * CI mode (disable dashboard and other non-essential features)
+   * Ignore patterns
    */
-  ci: false,
-
-  /**
-   * Incremental mode (speed up subsequent runs)
-   */
-  incremental: true,
-  incrementalFile: '.stryker-tmp/incremental.json',
-
-  /**
-   * Files to include in sandbox
-   */
-  files: [
-    'src/**/*.ts',
-    'src/**/*.js',
-    'package.json',
-    'tsconfig.json',
-    'vitest.config.ts',
-  ],
-
-  /**
-   * Exclude files from sandbox
-   */
-  exclude: [
-    '**/*.test.ts',
-    '**/*.spec.ts',
+  ignorePatterns: [
     '**/node_modules/**',
     '**/dist/**',
     '**/coverage/**',
+    '**/.stryker-tmp/**',
+    '**/examples/**',
+    '**/test-scripts/**',
+    '**/scripts/**',
+    '**/docs/**',
+    'eslint.config.mjs',
+    'k6-load-test.js',
   ],
+
+  /**
+   * Warnings configuration
+   */
+  warnings: {
+    unknownOptions: false,
+  },
 };

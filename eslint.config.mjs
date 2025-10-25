@@ -11,6 +11,7 @@ export default tseslint.config(
       '**/coverage/**',
       '**/build/**',
       '**/.tsup/**',
+      '**/.stryker-tmp/**', // Stryker mutation testing temporary files
       '**/examples/**',
       '**/test-scripts/**',
       'k6-load-test.js', // k6 script com APIs próprias
