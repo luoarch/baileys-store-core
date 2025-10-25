@@ -18,8 +18,9 @@ import type {
   VersionedResult,
   TtlConfig,
   ResilienceConfig,
+  StructuredLogger,
 } from '../types/index.js';
-import { StorageError } from '../types/index.js';
+import { StorageError, NullLoggerStructured } from '../types/index.js';
 import type { CryptoService } from '../crypto/index.js';
 import type { CodecService } from '../crypto/codec.js';
 import type { AuthenticationCreds } from '@whiskeysockets/baileys';
@@ -73,6 +74,8 @@ export interface RedisStoreConfig {
   resilience: ResilienceConfig;
   /** Enable TLS */
   enableTls?: boolean;
+  /** Optional structured logger */
+  logger?: StructuredLogger;
 }
 
 /**
@@ -83,12 +86,14 @@ export class RedisAuthStore implements AuthStore {
   private crypto: CryptoService;
   private codec: CodecService;
   private config: RedisStoreConfig;
+  private logger: StructuredLogger;
   private connected = false;
 
   constructor(config: RedisStoreConfig, crypto: CryptoService, codec: CodecService) {
     this.config = config;
     this.crypto = crypto;
     this.codec = codec;
+    this.logger = config.logger ?? new NullLoggerStructured();
 
     // Create ioredis client
     const options: RedisOptions = {
@@ -98,7 +103,9 @@ export class RedisAuthStore implements AuthStore {
       db: config.db ?? 0,
       retryStrategy: (times: number) => {
         if (times > config.resilience.maxRetries) {
-          console.error('Maximum Redis reconnection attempts reached');
+          this.logger.error('Maximum Redis reconnection attempts reached', undefined, {
+            action: 'redis_max_reconnection_attempts',
+          });
           return null; // Stop trying
         }
 
@@ -107,9 +114,11 @@ export class RedisAuthStore implements AuthStore {
           30000, // max 30s
         );
 
-        console.warn(
-          `Attempting Redis reconnection (attempt ${String(times)}), waiting ${String(delay)}ms`,
-        );
+        this.logger.warn(`Attempting Redis reconnection (attempt ${String(times)}), waiting ${String(delay)}ms`, {
+          attempt: times,
+          delayMs: delay,
+          action: 'redis_reconnection_attempt',
+        });
         return delay;
       },
       lazyConnect: false,
@@ -128,7 +137,9 @@ export class RedisAuthStore implements AuthStore {
 
     // Event handlers
     this.client.on('error', (err) => {
-      console.error('Redis client error:', err.message);
+      this.logger.error('Redis client error', err, {
+        action: 'redis_client_error',
+      });
     });
 
     this.client.on('connect', () => {
@@ -150,10 +161,20 @@ export class RedisAuthStore implements AuthStore {
   async connect(): Promise<void> {
     if (this.connected) return;
 
+    const startTime = Date.now();
+
     try {
       await this.client.ping();
       this.connected = true;
+      this.logger.info('RedisAuthStore connected successfully', {
+        duration: Date.now() - startTime,
+        action: 'redis_connect_success',
+      });
     } catch (error) {
+      this.logger.error('Failed to connect to Redis', error instanceof Error ? error : undefined, {
+        duration: Date.now() - startTime,
+        action: 'redis_connect_error',
+      });
       throw new StorageError(
         'Falha ao conectar ao Redis',
         'redis',
@@ -172,7 +193,9 @@ export class RedisAuthStore implements AuthStore {
       await this.client.quit();
       this.connected = false;
     } catch (error) {
-      console.error('Erro ao desconectar do Redis:', error);
+      this.logger.error('Erro ao desconectar do Redis', error instanceof Error ? error : undefined, {
+        action: 'redis_disconnect_error',
+      });
     }
   }
 
@@ -308,10 +331,10 @@ export class RedisAuthStore implements AuthStore {
         success: true,
       };
     } catch (error) {
-      console.error('❌ REDIS SET ERROR:', {
-        error: error instanceof Error ? error.message : String(error),
+      this.logger.error('❌ REDIS SET ERROR', error instanceof Error ? error : undefined, {
         sessionId,
         patchKeys: Object.keys(patch),
+        action: 'redis_set_error',
       });
       throw new StorageError(
         'Falha ao salvar no Redis',

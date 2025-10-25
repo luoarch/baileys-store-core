@@ -543,7 +543,7 @@ export async function createCryptoService(
       }
 
       // Development: gerar chave temporária
-      console.warn('Usando chave temporária. Configure MASTER_KEY para produção!');
+      // NOTE: Using temporary key in development - configure MASTER_KEY for production!
       const tempKey = randomBytes(CRYPTO_CONSTANTS.KEY_LENGTH);
       await service.initialize(tempKey);
     }

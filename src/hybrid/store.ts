@@ -18,8 +18,9 @@ import type {
   AuthPatch,
   Versioned,
   VersionedResult,
+  StructuredLogger,
 } from '../types/index.js';
-import { StorageError, VersionMismatchError, assertBufferTypes } from '../types/index.js';
+import { StorageError, VersionMismatchError, assertBufferTypes, NullLoggerStructured } from '../types/index.js';
 import type { HybridStoreConfig } from '../types/config.js';
 import type { RedisAuthStore } from '../redis/store.js';
 import type { MongoAuthStore } from '../mongodb/store.js';
@@ -36,6 +37,7 @@ import {
   metricsRegistry,
 } from '../metrics/index.js';
 import { OutboxManager } from './outbox.js';
+import { getContext } from '../context/execution-context.js';
 
 /**
  * Hybrid store metrics
@@ -57,6 +59,7 @@ export class HybridAuthStore implements AuthStore {
   private mongo: MongoAuthStore;
   private config: HybridStoreConfig;
   private connected = false;
+  private logger: StructuredLogger;
 
   // Metrics
   private metrics: HybridMetrics = {
@@ -84,6 +87,7 @@ export class HybridAuthStore implements AuthStore {
     this.redis = redis;
     this.mongo = mongo;
     this.config = config;
+    this.logger = config.logger ?? new NullLoggerStructured();
 
     // Initialize circuit breaker for MongoDB
     this.mongoCircuitBreaker = new CircuitBreaker(
@@ -101,19 +105,23 @@ export class HybridAuthStore implements AuthStore {
     // Circuit breaker event listeners for observability
     this.mongoCircuitBreaker.on('open', () => {
       circuitBreakerOpenCounter.inc();
-      console.error('MongoDB circuit breaker OPEN - entering degraded mode', {
+      this.logger.error('MongoDB circuit breaker OPEN - entering degraded mode', undefined, {
         action: 'circuit_breaker_open',
       });
     });
 
     this.mongoCircuitBreaker.on('halfOpen', () => {
       circuitBreakerHalfOpenCounter.inc();
-      // Silenciado: console.warn('MongoDB circuit breaker HALF-OPEN - testing recovery')
+      this.logger.warn('MongoDB circuit breaker HALF-OPEN - testing recovery', {
+        action: 'circuit_breaker_half_open',
+      });
     });
 
     this.mongoCircuitBreaker.on('close', () => {
       circuitBreakerCloseCounter.inc();
-      // Silenciado: console.log('MongoDB circuit breaker CLOSED - normal operation resumed')
+      this.logger.info('MongoDB circuit breaker CLOSED - normal operation resumed', {
+        action: 'circuit_breaker_closed',
+      });
     });
   }
 
@@ -123,29 +131,56 @@ export class HybridAuthStore implements AuthStore {
   async connect(): Promise<void> {
     if (this.connected) return;
 
+    const context = getContext();
+    const startTime = Date.now();
+
     try {
       // Connect to Redis
       await this.redis.connect();
+      this.logger.debug('Redis connected', {
+        action: 'redis_connect',
+        correlationId: context?.correlationId,
+      });
 
       // Connect to MongoDB
       await this.mongo.connect();
+      this.logger.debug('MongoDB connected', {
+        action: 'mongo_connect',
+        correlationId: context?.correlationId,
+      });
 
       this.connected = true;
+      this.logger.info('HybridAuthStore connected successfully', {
+        action: 'hybrid_connect',
+        duration: Date.now() - startTime,
+        correlationId: context?.correlationId,
+      });
 
       // Initialize outbox manager if write-behind is enabled
       if (this.config.enableWriteBehind && this.config.queue) {
         try {
           const redisClient = this.redis.getClient(); // Access internal Redis client
-          this.outboxManager = new OutboxManager(redisClient, this.mongo);
+          this.outboxManager = new OutboxManager(redisClient, this.mongo, this.logger);
           this.outboxManager.startReconciler();
 
-          // Silenciado: console.log('Outbox reconciler started')
+          this.logger.info('Outbox reconciler started', {
+            action: 'outbox_reconciler_started',
+            correlationId: context?.correlationId,
+          });
         } catch {
           // Silently skip outbox initialization if getClient is not available
-          console.warn('Outbox manager not initialized - getClient not available');
+          this.logger.warn('Outbox manager not initialized - getClient not available', {
+            action: 'outbox_reconciler_init_skipped',
+            correlationId: context?.correlationId,
+          });
         }
       }
     } catch (error) {
+      this.logger.error('Failed to connect HybridAuthStore', error instanceof Error ? error : undefined, {
+        action: 'hybrid_connect_error',
+        duration: Date.now() - startTime,
+        correlationId: context?.correlationId,
+      });
       throw new StorageError(
         'Failed to connect HybridAuthStore',
         'hybrid',
@@ -174,10 +209,12 @@ export class HybridAuthStore implements AuthStore {
 
       this.connected = false;
 
-      // Silenciado: console.log('HybridAuthStore disconnected')
+      this.logger.info('HybridAuthStore disconnected', {
+        action: 'hybrid_disconnected',
+      });
     } catch (error) {
-      console.error('Error disconnecting HybridAuthStore', {
-        error: error instanceof Error ? error.message : String(error),
+      this.logger.error('Error disconnecting HybridAuthStore', error instanceof Error ? error : undefined, {
+        message: error instanceof Error ? error.message : String(error),
         action: 'hybrid_disconnect_error',
       });
     }
@@ -187,20 +224,38 @@ export class HybridAuthStore implements AuthStore {
    * Get complete snapshot (Read-through pattern)
    */
   async get(sessionId: SessionId): Promise<Versioned<AuthSnapshot> | null> {
+    const startTime = Date.now();
+    const context = getContext();
+
     try {
       this.ensureConnected();
+
+      this.logger.debug('Starting get operation', {
+        sessionId,
+        action: 'get_start',
+        correlationId: context?.correlationId,
+      });
 
       // Try Redis first (hot path)
       try {
         const cached = await this.redis.get(sessionId);
         if (cached) {
           redisHitsCounter.inc({ session_id: sessionId });
+          this.logger.debug('Data loaded from Redis cache', {
+            sessionId,
+            duration: Date.now() - startTime,
+            correlationId: context?.correlationId,
+            action: 'redis_cache_hit',
+          });
           return cached;
         }
         redisMissesCounter.inc({ session_id: sessionId });
       } catch {
         redisMissesCounter.inc({ session_id: sessionId });
-        // Silenciado: console.warn('Redis read failed, falling back to MongoDB')
+        this.logger.warn('Redis read failed, falling back to MongoDB', {
+          sessionId,
+          action: 'redis_read_fallback',
+        });
       }
 
       // Fallback to MongoDB with circuit breaker (cold path)
@@ -212,15 +267,18 @@ export class HybridAuthStore implements AuthStore {
         });
       } catch {
         // Circuit breaker rejected or MongoDB failed
-        console.error('MongoDB unavailable - circuit breaker open', {
-          sessionId,
-          action: 'circuit_breaker_rejected',
-        });
+              this.logger.error('MongoDB unavailable - circuit breaker open', undefined, {
+        sessionId,
+        operation: 'circuit_breaker_rejected',
+      });
         return null; // Graceful degradation
       }
 
       if (!data) {
-        // Silenciado: console.debug('Data not found in MongoDB')
+        this.logger.debug('Data not found in MongoDB', {
+          sessionId,
+          action: 'mongo_data_not_found',
+        });
         return null;
       }
 
@@ -228,13 +286,27 @@ export class HybridAuthStore implements AuthStore {
 
       // Async cache warming (don't await)
       this.warmCache(sessionId, data).catch(() => {
-        // Silenciado: console.warn('Cache warming failed')
+        this.logger.warn('Cache warming failed', {
+          sessionId,
+          action: 'cache_warming_failed',
+        });
       });
 
-      // Silenciado: console.debug('Data loaded from MongoDB with cache warming')
+      this.logger.debug('Data loaded from MongoDB with cache warming', {
+        sessionId,
+        action: 'mongo_data_loaded',
+        duration: Date.now() - startTime,
+        correlationId: context?.correlationId,
+      });
 
       return data;
     } catch (error) {
+      this.logger.error('Failed to get from HybridAuthStore', error instanceof Error ? error : undefined, {
+        sessionId,
+        duration: Date.now() - startTime,
+        correlationId: context?.correlationId,
+        action: 'get_error',
+      });
       throw new StorageError(
         'Failed to get from HybridAuthStore',
         'hybrid',
@@ -289,7 +361,7 @@ export class HybridAuthStore implements AuthStore {
             queuePublishesCounter.inc({ session_id: sessionId });
           } catch (queueError) {
             queueFailuresCounter.inc({ session_id: sessionId });
-            console.warn('Queue write failed, falling back to direct MongoDB write', {
+            this.logger.warn('Queue write failed, falling back to direct MongoDB write', {
               sessionId,
               error: queueError instanceof Error ? queueError.message : String(queueError),
               action: 'hybrid_queue_fallback',
@@ -310,7 +382,10 @@ export class HybridAuthStore implements AuthStore {
           directWritesCounter.inc({ session_id: sessionId });
         }
 
-        // Silenciado: console.debug('Hybrid write completed')
+        this.logger.debug('Hybrid write completed', {
+          sessionId,
+          action: 'hybrid_write_completed',
+        });
 
         return result;
       } catch (error) {
@@ -342,7 +417,7 @@ export class HybridAuthStore implements AuthStore {
         await this.redis.delete(sessionId);
       } catch (error) {
         errors.push(error as Error);
-        console.error('Redis delete failed', {
+        this.logger.error('Redis delete failed', error instanceof Error ? error : undefined, {
           sessionId,
           error: error instanceof Error ? error.message : String(error),
           action: 'hybrid_delete_redis_failed',
@@ -354,7 +429,7 @@ export class HybridAuthStore implements AuthStore {
         await this.mongo.delete(sessionId);
       } catch (error) {
         errors.push(error as Error);
-        console.error('MongoDB delete failed', {
+        this.logger.error('MongoDB delete failed', error instanceof Error ? error : undefined, {
           sessionId,
           error: error instanceof Error ? error.message : String(error),
           action: 'hybrid_delete_mongo_failed',
@@ -368,14 +443,14 @@ export class HybridAuthStore implements AuthStore {
 
       // If one failed, log warning but consider success
       if (errors.length === 1) {
-        console.warn('Partial delete success - one layer failed', {
+        this.logger.warn('Partial delete success - one layer failed', {
           sessionId,
           failedLayers: errors.length,
           action: 'hybrid_delete_partial',
         });
       }
 
-      console.warn('Snapshot deleted from both layers', {
+      this.logger.warn('Snapshot deleted from both layers', {
         sessionId,
         action: 'hybrid_delete_success',
       });
@@ -403,7 +478,7 @@ export class HybridAuthStore implements AuthStore {
         await this.redis.touch(sessionId, ttlSeconds);
       } catch (error) {
         errors.push(error as Error);
-        console.error('Redis touch failed', {
+        this.logger.error('Redis touch failed', error instanceof Error ? error : undefined, {
           sessionId,
           error: error instanceof Error ? error.message : String(error),
           action: 'hybrid_touch_redis_failed',
@@ -415,7 +490,7 @@ export class HybridAuthStore implements AuthStore {
         await this.mongo.touch(sessionId, ttlSeconds);
       } catch (error) {
         errors.push(error as Error);
-        console.error('MongoDB touch failed', {
+        this.logger.error('MongoDB touch failed', error instanceof Error ? error : undefined, {
           sessionId,
           error: error instanceof Error ? error.message : String(error),
           action: 'hybrid_touch_mongo_failed',
@@ -429,7 +504,7 @@ export class HybridAuthStore implements AuthStore {
 
       // If one failed, log warning but consider success
       if (errors.length === 1) {
-        console.warn('Partial touch success - one layer failed', {
+        this.logger.warn('Partial touch success - one layer failed', {
           sessionId,
           failedLayers: errors.length,
           ttlSeconds,
@@ -437,7 +512,7 @@ export class HybridAuthStore implements AuthStore {
         });
       }
 
-      console.debug('TTL renewed in both layers', {
+      this.logger.debug('TTL renewed in both layers', {
         sessionId,
         ttlSeconds,
         action: 'hybrid_touch_success',
@@ -600,7 +675,7 @@ export class HybridAuthStore implements AuthStore {
       const current = await this.redis.get(sessionId);
 
       if (current && current.version >= data.version) {
-        console.debug('Cache warming skipped - newer version exists', {
+        this.logger.debug('Cache warming skipped - newer version exists', {
           sessionId,
           currentVersion: current.version,
           warmVersion: data.version,
@@ -612,13 +687,13 @@ export class HybridAuthStore implements AuthStore {
       // Warm cache with version check
       await this.redis.set(sessionId, data.data, data.version);
 
-      console.debug('Cache warmed successfully', {
+      this.logger.debug('Cache warmed successfully', {
         sessionId,
         version: data.version,
         action: 'hybrid_cache_warmed',
       });
     } catch (error) {
-      console.warn('Cache warming failed', {
+      this.logger.warn('Cache warming failed', {
         sessionId,
         error: error instanceof Error ? error.message : String(error),
         action: 'hybrid_cache_warming_failed',

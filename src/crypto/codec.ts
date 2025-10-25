@@ -70,7 +70,7 @@ class SnappyCompressor implements Compressor {
   async compress(data: Buffer): Promise<Buffer> {
     const module = await loadSnappyModule();
     if (module === null || typeof module !== 'object') {
-      console.warn('Snappy not available, using Gzip fallback');
+      // Silent fallback - Snappy not available
       return this.gzipFallback.compress(data);
     }
 
@@ -78,14 +78,14 @@ class SnappyCompressor implements Compressor {
       return (module as { compressSync: (data: Buffer) => Buffer }).compressSync(data);
     }
 
-    console.warn('Snappy compressSync not available, using Gzip fallback');
+    // Silent fallback - Snappy API not available
     return this.gzipFallback.compress(data);
   }
 
   async decompress(data: Buffer): Promise<Buffer> {
     const module = await loadSnappyModule();
     if (module === null || typeof module !== 'object') {
-      console.warn('Snappy not available, using Gzip fallback');
+      // Silent fallback - Snappy not available
       return this.gzipFallback.decompress(data);
     }
 
@@ -93,7 +93,7 @@ class SnappyCompressor implements Compressor {
       return (module as { uncompressSync: (data: Buffer) => Buffer }).uncompressSync(data);
     }
 
-    console.warn('Snappy uncompressSync not available, using Gzip fallback');
+    // Silent fallback - Snappy API not available
     return this.gzipFallback.decompress(data);
   }
 
@@ -148,8 +148,7 @@ export class CodecService {
         return new GzipCompressor();
 
       case 'lz4':
-        // Fallback to gzip if LZ4 not available
-        console.warn('LZ4 not implemented, using Gzip');
+        // Fallback to gzip if LZ4 not available (silent)
         return new GzipCompressor();
 
       default:

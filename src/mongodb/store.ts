@@ -19,8 +19,9 @@ import type {
   VersionedResult,
   TtlConfig,
   ResilienceConfig,
+  StructuredLogger,
 } from '../types/index.js';
-import { StorageError, VersionMismatchError } from '../types/index.js';
+import { StorageError, VersionMismatchError, NullLoggerStructured } from '../types/index.js';
 import type { CryptoService } from '../crypto/index.js';
 import type { CodecService } from '../crypto/codec.js';
 import type { AuthenticationCreds } from '@whiskeysockets/baileys';
@@ -35,6 +36,7 @@ export interface MongoAuthStoreConfig {
   ttl: TtlConfig;
   resilience: ResilienceConfig;
   enableTls?: boolean;
+  logger?: StructuredLogger; // Added
 }
 
 /**
@@ -62,6 +64,7 @@ export class MongoAuthStore implements AuthStore {
   private crypto: CryptoService;
   private codec: CodecService;
   private config: MongoAuthStoreConfig;
+  private logger: StructuredLogger; // Added
   private connected = false;
 
   // Document cache in memory (reduces roundtrips)
@@ -72,6 +75,7 @@ export class MongoAuthStore implements AuthStore {
     this.config = config;
     this.crypto = crypto;
     this.codec = codec;
+    this.logger = config.logger ?? new NullLoggerStructured(); // Initialize logger
 
     // Create MongoDB client
     this.client = new MongoClient(config.mongoUrl, {
@@ -84,14 +88,13 @@ export class MongoAuthStore implements AuthStore {
 
     // Event handlers
     this.client.on('error', (err) => {
-      console.error('MongoDB client error:', {
-        error: err.message,
+      this.logger.error('MongoDB client error', err, {
         action: 'mongo_client_error',
       });
     });
 
     this.client.on('close', () => {
-      console.warn('MongoDB client closed', {
+      this.logger.warn('MongoDB client closed', {
         action: 'mongo_client_closed',
       });
       this.connected = false;
@@ -133,16 +136,35 @@ export class MongoAuthStore implements AuthStore {
   async connect(): Promise<void> {
     if (this.connected) return;
 
+    const startTime = Date.now();
+
     try {
       await this.client.connect();
       this.db = this.client.db(this.config.databaseName);
       this.collection = this.db.collection<MongoAuthDocument>(this.config.collectionName);
 
+      this.logger.debug('Connected to MongoDB database', {
+        database: this.config.databaseName,
+        collection: this.config.collectionName,
+        duration: Date.now() - startTime,
+        action: 'mongo_connect',
+      });
+
       // Create indexes
       await this.createIndexes();
 
       this.connected = true;
+      this.logger.info('MongoAuthStore connected successfully', {
+        database: this.config.databaseName,
+        duration: Date.now() - startTime,
+        action: 'mongo_connect_success',
+      });
     } catch (error) {
+      this.logger.error('Failed to connect to MongoDB', error instanceof Error ? error : undefined, {
+        database: this.config.databaseName,
+        duration: Date.now() - startTime,
+        action: 'mongo_connect_error',
+      });
       throw new StorageError(
         'Failed to connect to MongoDB',
         'mongo',
@@ -159,12 +181,11 @@ export class MongoAuthStore implements AuthStore {
 
     try {
       await this.client.close();
-      console.warn('MongoAuthStore disconnected', {
+      this.logger.warn('MongoAuthStore disconnected', {
         action: 'mongo_store_disconnected',
       });
     } catch (error) {
-      console.error('Error disconnecting from MongoDB', {
-        error: error instanceof Error ? error.message : String(error),
+      this.logger.error('Error disconnecting from MongoDB', error instanceof Error ? error : undefined, {
         action: 'mongo_disconnect_error',
       });
     }
@@ -205,8 +226,8 @@ export class MongoAuthStore implements AuthStore {
     const results = await Promise.allSettled(indexOps);
     for (const result of results) {
       if (result.status === 'rejected') {
-        console.warn('Error creating indexes (may already exist)', {
-          error: result.reason instanceof Error ? result.reason.message : String(result.reason),
+        this.logger.warn('Error creating indexes (may already exist)', {
+          message: result.reason instanceof Error ? result.reason.message : String(result.reason),
           action: 'mongo_indexes_error',
         });
       }
@@ -227,7 +248,7 @@ export class MongoAuthStore implements AuthStore {
       // Check cache
       const cached = this.getFromCache(docId);
       if (cached) {
-        console.debug('Document loaded from cache', {
+        this.logger.debug('Document loaded from cache', {
           sessionId: docId,
           action: 'mongo_cache_hit',
         });
@@ -239,7 +260,7 @@ export class MongoAuthStore implements AuthStore {
       const doc = await this.collection.findOne({ _id: docId });
 
       if (!doc) {
-        console.debug('Document not found', {
+        this.logger.debug('Document not found', {
           sessionId: docId,
           latency: Date.now() - startTime,
           action: 'mongo_get_not_found',
@@ -252,7 +273,7 @@ export class MongoAuthStore implements AuthStore {
 
       const snapshot = await this.deserializeDocument(doc);
 
-      console.debug('Snapshot loaded from MongoDB', {
+      this.logger.debug('Snapshot loaded from MongoDB', {
         sessionId: docId,
         version: doc.version,
         latency: Date.now() - startTime,
@@ -423,7 +444,7 @@ export class MongoAuthStore implements AuthStore {
       // Invalidate cache
       this.invalidateCache(docId);
 
-      console.warn('Snapshot removed from MongoDB', {
+      this.logger.warn('Snapshot removed from MongoDB', {
         sessionId: docId,
         action: 'mongo_delete_success',
       });
@@ -461,7 +482,7 @@ export class MongoAuthStore implements AuthStore {
       // Invalidate cache
       this.invalidateCache(docId);
 
-      console.debug('TTL renewed in MongoDB', {
+      this.logger.debug('TTL renewed in MongoDB', {
         sessionId: docId,
         ttlSeconds: ttl,
         action: 'mongo_touch_success',
@@ -519,7 +540,7 @@ export class MongoAuthStore implements AuthStore {
     const encoded = await this.codec.encode(data);
     const encrypted = await this.crypto.encrypt(encoded);
 
-    console.debug('🔒 [MONGO DEBUG] Serializing field:', {
+    this.logger.debug('🔒 [MONGO DEBUG] Serializing field', {
       ciphertextLength: encrypted.ciphertext.length,
       nonceLength: encrypted.nonce.length,
       nonceHex: encrypted.nonce.toString('hex'),
@@ -537,7 +558,7 @@ export class MongoAuthStore implements AuthStore {
   private async deserializeField(encoded: string): Promise<unknown> {
     const buffer = Buffer.from(encoded, 'base64');
 
-    console.debug('🔓 [MONGO DEBUG] Deserializing field:', {
+    this.logger.debug('🔓 [MONGO DEBUG] Deserializing field', {
       bufferLength: buffer.length,
       bufferHex: buffer.toString('hex').substring(0, 32) + '...',
     });
@@ -550,7 +571,7 @@ export class MongoAuthStore implements AuthStore {
     const nonce = buffer.subarray(0, 12);
     const ciphertext = buffer.subarray(12);
 
-    console.debug('🔓 [MONGO DEBUG] Separated data:', {
+    this.logger.debug('🔓 [MONGO DEBUG] Separated data', {
       nonceLength: nonce.length,
       nonceHex: nonce.toString('hex'),
       ciphertextLength: ciphertext.length,

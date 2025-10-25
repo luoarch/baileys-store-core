@@ -11,7 +11,8 @@
  */
 
 import type { Redis } from 'ioredis';
-import type { SessionId, AuthPatch } from '../types/index.js';
+import type { SessionId, AuthPatch, StructuredLogger } from '../types/index.js';
+import { NullLoggerStructured } from '../types/index.js';
 import type { OutboxEntry, OutboxReconcilerStats } from '../types/outbox.js';
 import type { MongoAuthStore } from '../mongodb/store.js';
 import {
@@ -25,6 +26,7 @@ import {
 export class OutboxManager {
   private redis: Redis;
   private mongo: MongoAuthStore;
+  private logger: StructuredLogger;
   private reconcilerInterval: NodeJS.Timeout | null = null;
   private stats: OutboxReconcilerStats = {
     totalProcessed: 0,
@@ -35,9 +37,10 @@ export class OutboxManager {
     lastRunAt: 0,
   };
 
-  constructor(redis: Redis, mongo: MongoAuthStore) {
+  constructor(redis: Redis, mongo: MongoAuthStore, logger?: StructuredLogger) {
     this.redis = redis;
     this.mongo = mongo;
+    this.logger = logger ?? new NullLoggerStructured();
   }
 
   /**
@@ -208,10 +211,9 @@ export class OutboxManager {
               (Date.now() - entryStartTime) / 1000,
             );
 
-            console.error('Outbox reconciler failed to persist entry', {
+            this.logger.error('Outbox reconciler failed to persist entry', error instanceof Error ? error : undefined, {
               sessionId,
               version: entry.version,
-              error: error instanceof Error ? error.message : String(error),
               attempts: entry.attempts,
               action: 'outbox_reconciler_failure',
             });
@@ -229,15 +231,14 @@ export class OutboxManager {
         (this.stats.avgLatency * (this.stats.totalProcessed - outboxKeys.length) + totalLatency) /
         this.stats.totalProcessed;
 
-      console.debug('Outbox reconciler completed', {
+      this.logger.debug('Outbox reconciler completed', {
         processed: outboxKeys.length,
         latency: totalLatency,
         stats: this.stats,
         action: 'outbox_reconciler_complete',
       });
     } catch (error: unknown) {
-      console.error('Outbox reconciler error', {
-        error: error instanceof Error ? error.message : String(error),
+      this.logger.error('Outbox reconciler error', error instanceof Error ? error : undefined, {
         action: 'outbox_reconciler_error',
       });
     }
@@ -248,18 +249,20 @@ export class OutboxManager {
    */
   startReconciler(): void {
     if (this.reconcilerInterval) {
-      console.warn('Outbox reconciler already running');
+      this.logger.warn('Outbox reconciler already running', {
+        action: 'outbox_reconciler_already_running',
+      });
       return;
     }
 
-    console.warn('Starting outbox reconciler (30s interval)', {
+    this.logger.warn('Starting outbox reconciler (30s interval)', {
       action: 'outbox_reconciler_start',
     });
 
     this.reconcilerInterval = setInterval(() => {
       this.reconcile().catch((error: unknown) => {
-        console.error('Outbox reconciler unhandled error', {
-          error: error instanceof Error ? error.message : String(error),
+        this.logger.error('Outbox reconciler unhandled error', error instanceof Error ? error : undefined, {
+          action: 'outbox_reconciler_unhandled_error',
         });
       });
     }, 30_000);
@@ -272,7 +275,7 @@ export class OutboxManager {
     if (this.reconcilerInterval) {
       clearInterval(this.reconcilerInterval);
       this.reconcilerInterval = null;
-      console.warn('Outbox reconciler stopped', {
+      this.logger.warn('Outbox reconciler stopped', {
         action: 'outbox_reconciler_stop',
       });
     }
