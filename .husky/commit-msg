@@ -1,6 +1,3 @@
-#!/usr/bin/env sh
-. "$(dirname -- "$0")/_/husky.sh"
-
 export PATH="/Users/luoarch/.nvm/versions/node/v22.19.0/bin:$PATH"
 npx commitlint --edit "$1"
 

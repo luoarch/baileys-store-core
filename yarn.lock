@@ -1198,19 +1198,6 @@
   resolved "https://registry.npmjs.org/@keyv/serialize/-/serialize-1.1.1.tgz#0c01dd3a3483882af7cf3878d4e71d505c81fc4a"
   integrity sha512-dXn3FZhPv0US+7dtJsIi2R+c7qWYiReoEh5zUntWCf4oSpMNib8FDhSoed6m3QyZdx5hK7iLFkYk3rNxwt8vTA==
 
-"@luoarch/baileys-store-core@^1.0.0-rc.1":
-  version "1.0.0-rc.1"
-  resolved "https://registry.npmjs.org/@luoarch/baileys-store-core/-/baileys-store-core-1.0.0-rc.1.tgz#33f0a0535bf5270311672bb6c74c15628ab2ef1d"
-  integrity sha512-elj9nYwxVFzq9uAxKl0RekEjDi4wa1xKiu5wZtVUzHX5dNu7Y6AW+G52si9EKYqbOoqXDYg99eWfgCIohhDNbw==
-  dependencies:
-    "@hapi/boom" "^10.0.1"
-    "@napi-rs/snappy" "^1.0.2"
-    async-mutex "^0.5.0"
-    opossum "^9.0.0"
-    prom-client "^15.1.0"
-    tweetnacl "^1.0.3"
-    zod "^3.22.4"
-
 "@mongodb-js/saslprep@^1.3.0":
   version "1.3.2"
   resolved "https://registry.yarnpkg.com/@mongodb-js/saslprep/-/saslprep-1.3.2.tgz#51e5cad2f24b8759702d9cc185da0a3ef3784bad"
@@ -4674,11 +4661,6 @@ init-package-json@^8.2.2:
     semver "^7.7.2"
     validate-npm-package-license "^3.0.4"
     validate-npm-package-name "^6.0.2"
-
-install@^0.13.0:
-  version "0.13.0"
-  resolved "https://registry.npmjs.org/install/-/install-0.13.0.tgz#6af6e9da9dd0987de2ab420f78e60d9c17260776"
-  integrity sha512-zDml/jzr2PKU9I8J/xyZBQn8rPCAY//UOYNmR01XwNwyfhEWObo2SWfSl1+0tm1u6PhxLwDnfsT/6jB7OUxqFA==
 
 into-stream@^7.0.0:
   version "7.0.0"

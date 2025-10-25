@@ -131,7 +131,7 @@
     "presets:validate": "tsx scripts/validate-presets.ts",
     "coverage:check": "node scripts/check-coverage.js",
     "prepublishOnly": "yarn clean && yarn build && yarn test && yarn lint && npm pack --dry-run",
-    "prepare": "node -e \"const fs = require('fs'); if (fs.existsSync('.git')) { require('husky').install() }\""
+    "prepare": "node -e \"const fs = require('fs'); if (fs.existsSync('.git')) { require('child_process').execSync('npx husky', { stdio: 'inherit' }) }\""
   },
   "lint-staged": {
     "*.{ts,tsx}": [
