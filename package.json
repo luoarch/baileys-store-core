@@ -1,6 +1,6 @@
 {
   "name": "@luoarch/baileys-store-core",
-  "version": "1.0.0-rc.2",
+  "version": "1.0.0-rc.3",
   "description": "Universal authentication state management for Baileys v7.0+ with Redis, MongoDB, and hybrid storage support",
   "type": "module",
   "sideEffects": false,
@@ -182,6 +182,9 @@
     "mongodb": "^6.20.0"
   },
   "peerDependenciesMeta": {
+    "@whiskeysockets/baileys": {
+      "optional": false
+    },
     "ioredis": {
       "optional": true
     },
@@ -191,6 +194,9 @@
     "sharp": {
       "optional": true
     }
+  },
+  "resolutions": {
+    "@napi-rs/snappy": "npm:snappy@^7.2.2"
   },
   "dependencies": {
     "@hapi/boom": "^10.0.1",

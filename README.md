@@ -1,6 +1,6 @@
 # @luoarch/baileys-store-core
 
-> ⚠️ **Release Candidate**: Currently at v1.0.0-rc.1. Stable v1.0.0 coming soon!  
+> ⚠️ **Release Candidate**: Currently at v1.0.0-rc.3. Stable v1.0.0 coming soon!  
 > 💬 **Feedback Welcome**: [GitHub Discussions](https://github.com/luoarch/baileys-store-core/discussions)
 
 Production-grade authentication state management for Baileys v7.0+ with Redis, MongoDB, and hybrid storage
@@ -28,26 +28,38 @@ Production-grade authentication state management for Baileys v7.0+ with Redis, M
 - ⚙️ **Config Presets** - Development, Production, and Testing configurations out of the box
 - 📚 **Well-Documented** - ADRs, SLA, Research documentation
 
-## Quick Start (RC1)
+## Installation
+
+### Release Candidate (Recommended)
 
 ```bash
-# Install release candidate
-npm install @luoarch/baileys-store-core@next
+# Install both packages (required)
+npm install @whiskeysockets/baileys@latest @luoarch/baileys-store-core@1.0.0-rc.3
 
-# Or specific version
-npm install @luoarch/baileys-store-core@1.0.0-rc.1
-
-# Stable version (after release)
-npm install @luoarch/baileys-store-core
+# Or with Yarn
+yarn add @whiskeysockets/baileys@latest @luoarch/baileys-store-core@1.0.0-rc.3
 ```
 
-> **Note:** Stable version not yet available. Use `@next` tag to test RC1.
+### Stable Version (Coming Soon)
+
+```bash
+# After stable release
+npm install @whiskeysockets/baileys@latest @luoarch/baileys-store-core
+
+# Or with Yarn
+yarn add @whiskeysockets/baileys@latest @luoarch/baileys-store-core
+```
+
+> **⚠️ Important:** You must install both `@whiskeysockets/baileys` and `@luoarch/baileys-store-core` as this library is a peer dependency of Baileys.
 
 ### Hybrid Storage with Config Presets (Recommended)
 
 ```typescript
 import { makeWASocket } from '@whiskeysockets/baileys';
-import { useHybridAuthState, createHybridConfigFromPreset } from '@luoarch/baileys-store-core/hybrid';
+import {
+  useHybridAuthState,
+  createHybridConfigFromPreset,
+} from '@luoarch/baileys-store-core/hybrid';
 
 // Use PRODUCTION preset with minimal configuration
 const config = createHybridConfigFromPreset('PRODUCTION', {
@@ -259,18 +271,21 @@ interface OutboxEntry {
 Pre-configured presets for different environments:
 
 ### DEVELOPMENT
+
 - Short TTLs (5 minutes) for rapid iteration
 - Long timeouts (10s) for debugging
 - Detailed logging enabled
 - Encryption disabled
 
 ### PRODUCTION
+
 - Optimized TTLs (1 hour default, 7 days for creds/keys)
 - Aggressive timeouts (5s)
 - Encryption mandatory (AES-256-GCM)
 - Minimal logging
 
 ### TESTING
+
 - Very short TTLs (30s) for quick tests
 - Fast timeouts (2s)
 - Encryption disabled
@@ -417,7 +432,7 @@ For academic use, see [CITATION.cff](./CITATION.cff) or cite as:
   title = {@luoarch/baileys-store-core},
   year = {2025},
   url = {https://github.com/luoarch/baileys-store-core},
-  version = {1.0.0-rc.1}
+  version = {1.0.0-rc.3}
 }
 ```
 
