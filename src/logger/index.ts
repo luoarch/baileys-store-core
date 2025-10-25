@@ -117,12 +117,23 @@ export class ConsoleStructuredLogger implements StructuredLogger {
       `${entry.timestamp} [${entry.level}] ${entry.message}`,
     ];
     
+    // Add correlationId if present
     if (entry.correlationId) {
       lines.push(`  correlationId: ${entry.correlationId}`);
     }
     
-    if (entry.context) {
-      lines.push(`  context: ${JSON.stringify(entry.context, null, 2)}`);
+    // Add all other context fields (excluding metadata)
+    const contextKeys = ['correlationId', 'requestId', 'timestamp', 'level', 'message', 'environment', 'duration'];
+    const contextFields: Record<string, unknown> = {};
+    
+    for (const [key, value] of Object.entries(entry)) {
+      if (!contextKeys.includes(key) && value !== undefined) {
+        contextFields[key] = value;
+      }
+    }
+    
+    if (Object.keys(contextFields).length > 0) {
+      lines.push(`  context: ${JSON.stringify(contextFields, null, 2)}`);
     }
     
     return lines.join('\n');
