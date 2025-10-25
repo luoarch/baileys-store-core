@@ -55,6 +55,25 @@ export {
 
 export type { ConfigPreset, PresetName } from './config/presets.js';
 
+// ========== Validation ==========
+export {
+  validateAndReportConfig,
+  validatePreset,
+  analyzeConfigPerformance,
+  scanConfigSecurity,
+  HybridStoreConfigSchema,
+  TtlConfigSchema,
+  ResilienceConfigSchema,
+  SecurityConfigSchema,
+  ObservabilityConfigSchema,
+  ConfigPresetSchema,
+} from './validation/index.js';
+
+export type {
+  ValidationReport,
+  ValidationError,
+} from './validation/index.js';
+
 // Nota: Configs específicos são exportados pelos respectivos módulos
 // RedisStoreConfig → @baileys-store/core/redis
 // MongoStoreConfig → @baileys-store/core/mongodb
