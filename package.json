@@ -207,8 +207,8 @@
     "@types/ioredis-mock": "^8.0.0",
     "@types/node": "^22.10.0",
     "@types/opossum": "^8.1.9",
-    "@vitest/coverage-v8": "^4.0.2",
-    "@vitest/ui": "^4.0.2",
+    "@vitest/coverage-v8": "^4.0.3",
+    "@vitest/ui": "^4.0.3",
     "@whiskeysockets/baileys": "7.0.0-rc.6",
     "bibtex-tidy": "^1.14.0",
     "bullmq": "^5.1.0",
@@ -229,7 +229,7 @@
     "tsx": "^4.20.6",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.46.2",
-    "vitest": "^4.0.2"
+    "vitest": "^4.0.3"
   },
   "engines": {
     "node": ">=20.0.0"
