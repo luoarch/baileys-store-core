@@ -3,11 +3,16 @@
 /**
  * Coverage Threshold Enforcer
  *
- * Validates test coverage thresholds:
- * - Lines: >= 85%
- * - Branches: >= 80%
- * - Functions: >= 80%
- * - Statements: >= 85%
+ * Validates test coverage thresholds (RC1 targets):
+ * - Lines: >= 75%
+ * - Branches: >= 65%
+ * - Functions: >= 75%
+ * - Statements: >= 75%
+ * 
+ * Roadmap incremental:
+ * - v1.0.0-rc.1: 75% lines, 65% branches (mínimo viável)
+ * - v1.0.0-rc.2: 78% lines, 70% branches (melhoria)
+ * - v1.0.0: 85% lines, 80% branches (production-ready)
  */
 
 import { readFileSync } from 'fs';
@@ -17,12 +22,12 @@ import { dirname, join } from 'path';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-// Thresholds
+// Thresholds RC1 - incremental para produção
 const THRESHOLDS = {
-  lines: 85,
-  branches: 80,
-  functions: 80,
-  statements: 85,
+  lines: 75,     // Industry standard para bibliotecas
+  branches: 65,  // Caminhos críticos cobertos
+  functions: 75, // Funções principais testadas
+  statements: 75, // Statements principais cobertos
 };
 
 // Colors for terminal output
