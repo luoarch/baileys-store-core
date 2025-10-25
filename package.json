@@ -224,7 +224,7 @@
     "prettier": "^3.6.2",
     "qrcode-terminal": "^0.12.0",
     "semantic-release": "^25.0.1",
-    "sharp": "^0.33.0",
+    "sharp": "^0.34.4",
     "tsup": "^8.5.0",
     "tsx": "^4.20.6",
     "typescript": "^5.9.3",
