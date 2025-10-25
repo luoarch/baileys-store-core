@@ -85,3 +85,74 @@ export function getOperationDuration(): number | undefined {
   }
   return undefined;
 }
+
+/**
+ * Run function with specific correlation ID
+ * 
+ * @param correlationId - Correlation ID to use
+ * @param fn - Function to execute
+ * @returns Result of function execution
+ * 
+ * @example
+ * ```typescript
+ * const result = await withCorrelationId('req-123', async () => {
+ *   // All async operations in this function will have correlationId='req-123'
+ *   const data = await store.get('session1');
+ *   return data;
+ * });
+ * ```
+ */
+export function withCorrelationId<T>(
+  correlationId: string,
+  fn: () => T
+): T {
+  return withContext({ correlationId }, fn);
+}
+
+/**
+ * Set metadata in current context
+ * 
+ * @param metadata - Key-value pairs to add to context
+ * 
+ * @example
+ * ```typescript
+ * setContextMetadata({ 
+ *   userId: 'user-123',
+ *   sessionId: 'session-456' 
+ * });
+ * ```
+ */
+export function setContextMetadata(metadata: Record<string, string>): void {
+  const context = getContext();
+  if (context) {
+    context.metadata = {
+      ...context.metadata,
+      ...metadata,
+    };
+  }
+}
+
+/**
+ * Get metadata from current context
+ * 
+ * @param key - Metadata key
+ * @returns Metadata value or undefined
+ * 
+ * @example
+ * ```typescript
+ * const userId = getContextMetadata('userId');
+ * ```
+ */
+export function getContextMetadata(key: string): string | undefined {
+  const context = getContext();
+  return context?.metadata?.[key];
+}
+
+/**
+ * Check if current context has correlation ID
+ * 
+ * @returns Whether correlation ID is present
+ */
+export function hasCorrelationId(): boolean {
+  return getCorrelationId() !== undefined;
+}

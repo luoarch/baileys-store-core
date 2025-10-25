@@ -988,18 +988,25 @@ const config = {
 ### 4.4 Correlation ID Enhancements 🟢 ⭐⭐
 
 **Complexidade:** Fácil (1 dia)  
-**Impacto:** Médio - Melhora traceability
+**Impacto:** Médio - Melhora traceability  
+**Status:** ✅ **Concluído**
+
+**Arquivos modificados:**
+- ✅ `src/context/execution-context.ts` - Adicionar helpers
+- ✅ `src/index.ts` - Exportar novos helpers
 
 **Arquivos a modificar:**
-- `src/context/execution-context.ts` - Adicionar helpers
-- `src/hybrid/store.ts` - Usar correlation IDs em logs
+- [ ] `src/hybrid/store.ts` - Usar correlation IDs em logs (já implementado)
 
 **Checklist:**
-- [ ] Adicionar helper `withCorrelationId(correlationId, fn)`
-- [ ] Adicionar helper `getCorrelationId()` 
-- [ ] Propagar correlation ID automaticamente em todas operações
-- [ ] Adicionar correlation ID nos logs estruturados
-- [ ] Documentar uso de correlation IDs
+- ✅ Adicionar helper `withCorrelationId(correlationId, fn)`
+- ✅ Adicionar helper `getCorrelationId()` (já existia)
+- ✅ Adicionar helper `setContextMetadata(metadata)` para adicionar metadados
+- ✅ Adicionar helper `getContextMetadata(key)` para recuperar metadados
+- ✅ Adicionar helper `hasCorrelationId()` para verificar presença
+- ✅ Propagar correlation ID automaticamente em todas operações (já implementado)
+- ✅ Adicionar correlation ID nos logs estruturados (já implementado)
+- ✅ Documentar uso de correlation IDs em JSDoc com exemplos
 
 ### 4.5 Benchmarks e Performance Tests 🟡 ⭐⭐
 
@@ -1112,8 +1119,8 @@ const config = {
 **Progresso da Fase 4:**
 - ✅ 4.2 Enhanced Health Checks (100% concluído)
 - ✅ 4.3 Observability Enhancements (100% concluído)
+- ✅ 4.4 Correlation ID Enhancements (100% concluído)
 - ⏳ 4.1 Batch Operations (pendente)
-- ⏳ 4.4 Correlation ID Enhancements (pendente)
 - ⏳ 4.5 Benchmarks e Performance Tests (pendente)
 
 ---

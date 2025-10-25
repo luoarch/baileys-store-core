@@ -123,6 +123,14 @@ export {
   outboxReconcilerLatencyHistogram,
   outboxReconcilerFailuresCounter,
   operationLatencyHistogram,
+  batchOperationsCounter,
+  batchOperationsDurationHistogram,
+  versionConflictCounter,
+  cacheWarmingCounter,
+  circuitBreakerStateGauge,
+  outboxQueueSizeGauge,
+  outboxReconciliationLatencyHistogram,
+  operationTimeoutCounter,
   getMetricsText,
   resetMetrics,
 } from './metrics/index.js';
@@ -137,9 +145,25 @@ export {
   getCorrelationId,
   getRequestId,
   getOperationDuration,
+  withCorrelationId,
+  setContextMetadata,
+  getContextMetadata,
+  hasCorrelationId,
 } from './context/execution-context.js';
 
 export type { ExecutionContext } from './context/execution-context.js';
+
+// ========== Health Checks ==========
+export {
+  performHealthCheck,
+  isReady,
+  isLive,
+} from './health/index.js';
+export type {
+  ComponentHealth,
+  HealthStatus,
+  HealthCheckConfig,
+} from './health/index.js';
 
 // ========== Errors ==========
 export {
