@@ -1,0 +1,70 @@
+name: Release
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+  id-token: write # ✅ CRÍTICO para provenance
+  packages: write
+
+jobs:
+  release:
+    name: Semantic Release
+    runs-on: ubuntu-latest
+
+    services:
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+      mongodb:
+        image: mongo:7
+        ports:
+          - 27017:27017
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.x'
+          cache: 'yarn'
+
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Build
+        run: yarn build
+
+      - name: Run tests
+        run: |
+          yarn test
+          yarn test:integration
+          yarn test:e2e
+        env:
+          REDIS_URL: redis://localhost:6379
+          MONGO_URL: mongodb://localhost:27017
+
+      - name: Check Zenodo DOI exists
+        run: |
+          if ! grep -q "doi.org" CITATION.cff; then
+            echo "⚠️  Warning: DOI not found in CITATION.cff (expected for pre-release)"
+          fi
+        continue-on-error: true
+
+      - name: Security audit
+        run: npm audit --production --audit-level=high
+
+      - name: Semantic Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: npx semantic-release
