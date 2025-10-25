@@ -297,7 +297,7 @@ describe('Integration Tests - Real Services', () => {
           await store.set(sessionId, patch);
           const result = await store.get(sessionId);
           expect(result).toBeDefined();
-          expect(result!.data.creds.me.id).toBe('1@test');
+          expect(result!.data?.creds?.me?.id).toBe('1@test');
         });
 
         // Cleanup
@@ -361,7 +361,7 @@ describe('Integration Tests - Real Services', () => {
         const cbStats = store.getCircuitBreakerStats();
         expect(cbStats).toBeDefined();
         expect(typeof cbStats.fires).toBe('number');
-        expect(typeof cbStats.closed).toBe('boolean');
+        expect(typeof cbStats.successes).toBe('number');
 
         // Verify circuit breaker can be in different states
         const isOpen = store.isMongoCircuitBreakerOpen();
