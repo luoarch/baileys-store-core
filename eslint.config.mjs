@@ -13,6 +13,7 @@ export default tseslint.config(
       '**/.tsup/**',
       '**/examples/**',
       '**/test-scripts/**',
+      'k6-load-test.js', // k6 script com APIs próprias
       '.git/**',
       '.husky/**',
       '.idea/**'
