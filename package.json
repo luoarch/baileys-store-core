@@ -202,7 +202,7 @@
     "@semantic-release/git": "^10.0.1",
     "@semantic-release/npm": "^13.1.1",
     "@testcontainers/mongodb": "^11.7.1",
-    "@testcontainers/redis": "^11.7.1",
+    "@testcontainers/redis": "^11.7.2",
     "@types/express": "^5.0.3",
     "@types/ioredis-mock": "^8.0.0",
     "@types/node": "^22.10.0",

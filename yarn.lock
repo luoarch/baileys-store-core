@@ -1568,12 +1568,12 @@
     compare-versions "^6.1.1"
     testcontainers "^11.7.1"
 
-"@testcontainers/redis@^11.7.1":
-  version "11.7.1"
-  resolved "https://registry.npmjs.org/@testcontainers/redis/-/redis-11.7.1.tgz#d78d17b2c395069d755de26fd5a5f5d3f30f5490"
-  integrity sha512-nyM7HjtF1lSiL6MjI3uQpJCYxvkwxtqYlButCLT3wJOnCPomiAe2OoWPmsVpI1FvbAcTrm2ck4r5Jzx5GXbMUQ==
+"@testcontainers/redis@^11.7.2":
+  version "11.7.2"
+  resolved "https://registry.yarnpkg.com/@testcontainers/redis/-/redis-11.7.2.tgz#370466dab4882f06d559d3cec456181d4325348b"
+  integrity sha512-6AuHSV0DRsKL8CcuRevZnsLjBXhj5HjNL1HuD8dayzorMmcSzPiQ3EZriq2kYthDViFq4r6zxA8QLlTjsAT+dA==
   dependencies:
-    testcontainers "^11.7.1"
+    testcontainers "^11.7.2"
 
 "@tokenizer/inflate@^0.2.7":
   version "0.2.7"
@@ -3011,7 +3011,7 @@ docker-modem@^5.0.6:
     split-ca "^1.0.1"
     ssh2 "^1.15.0"
 
-dockerode@^4.0.8:
+dockerode@^4.0.9:
   version "4.0.9"
   resolved "https://registry.npmjs.org/dockerode/-/dockerode-4.0.9.tgz#15b32000edad25520be6fafa9ad6bc4529b06be7"
   integrity sha512-iND4mcOWhPaCNh54WmK/KoSb35AFqPAUWFMffTQcp52uQt36b5uNwEJTSXntJZBbeGad72Crbi/hvDIv6us/6Q==
@@ -6953,10 +6953,10 @@ tempy@^3.0.0:
     type-fest "^2.12.2"
     unique-string "^3.0.0"
 
-testcontainers@^11.7.1:
-  version "11.7.1"
-  resolved "https://registry.npmjs.org/testcontainers/-/testcontainers-11.7.1.tgz#4ee8595f02b594012fae10433e059608a4aaa565"
-  integrity sha512-fjut+07G4Avp6Lly/6hQePpUpQFv9ZyQd+7JC5iCDKg+dWa2Sw7fXD3pBrkzslYFfKqGx9M6kyIaLpg9VeMsjw==
+testcontainers@^11.7.1, testcontainers@^11.7.2:
+  version "11.7.2"
+  resolved "https://registry.yarnpkg.com/testcontainers/-/testcontainers-11.7.2.tgz#4b3b0c4ebaf0dcb7a53312314107d623fc0c97ca"
+  integrity sha512-jeFzeyzLhIouRAbLnQNapJ2esBs/mvXkkYvO1/vSZehT3/7+Q557qaNxwKwMqAbfxfSh7gcx1OLlMsQUZ9JLdA==
   dependencies:
     "@balena/dockerignore" "^1.0.2"
     "@types/dockerode" "^3.3.44"
@@ -6965,7 +6965,7 @@ testcontainers@^11.7.1:
     byline "^5.0.0"
     debug "^4.4.3"
     docker-compose "^1.3.0"
-    dockerode "^4.0.8"
+    dockerode "^4.0.9"
     get-port "^7.1.0"
     proper-lockfile "^4.1.2"
     properties-reader "^2.3.0"
