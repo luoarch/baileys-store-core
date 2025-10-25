@@ -203,7 +203,7 @@
     "@semantic-release/npm": "^13.1.1",
     "@testcontainers/mongodb": "^11.7.2",
     "@testcontainers/redis": "^11.7.2",
-    "@types/express": "^5.0.3",
+    "@types/express": "^5.0.4",
     "@types/ioredis-mock": "^8.0.0",
     "@types/node": "^24.9.1",
     "@types/opossum": "^8.1.9",
