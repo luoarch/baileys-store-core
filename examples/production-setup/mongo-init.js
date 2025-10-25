@@ -18,23 +18,20 @@ db[COLLECTION].createIndex(
   { expiresAt: 1 },
   {
     name: 'expiresAt_ttl_idx',
-    expireAfterSeconds: 0
-  }
+    expireAfterSeconds: 0,
+  },
 );
 
 // Index on updatedAt for analytics queries
-db[COLLECTION].createIndex(
-  { updatedAt: -1 },
-  { name: 'updatedAt_idx' }
-);
+db[COLLECTION].createIndex({ updatedAt: -1 }, { name: 'updatedAt_idx' });
 
 // Index on fencingToken (sparse, for active sessions)
 db[COLLECTION].createIndex(
   { fencingToken: 1 },
   {
     name: 'fencingToken_idx',
-    sparse: true
-  }
+    sparse: true,
+  },
 );
 
 // Index on version for optimistic locking
@@ -42,8 +39,8 @@ db[COLLECTION].createIndex(
   { version: 1 },
   {
     name: 'version_idx',
-    sparse: true
-  }
+    sparse: true,
+  },
 );
 
 // Create a sample document for testing
@@ -55,7 +52,7 @@ db[COLLECTION].insertOne({
   fencingToken: 1,
   updatedAt: new Date(),
   createdAt: new Date(),
-  expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 hours
+  expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours
 });
 
 print('MongoDB initialization completed successfully!');

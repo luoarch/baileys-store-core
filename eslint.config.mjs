@@ -15,7 +15,7 @@ export default tseslint.config(
       '**/test-scripts/**',
       '.git/**',
       '.husky/**',
-      '.idea/**'
+      '.idea/**',
     ],
   },
 
@@ -25,10 +25,7 @@ export default tseslint.config(
   // 3) Strict type-checked for TypeScript source files ONLY
   {
     files: ['src/**/*.ts'],
-    extends: [
-      ...tseslint.configs.strictTypeChecked,
-      ...tseslint.configs.stylisticTypeChecked,
-    ],
+    extends: [...tseslint.configs.strictTypeChecked, ...tseslint.configs.stylisticTypeChecked],
     languageOptions: {
       parserOptions: {
         projectService: true,
@@ -37,7 +34,7 @@ export default tseslint.config(
     },
     linterOptions: {
       reportUnusedDisableDirectives: 'warn',
-      noInlineConfig: false
+      noInlineConfig: false,
     },
     rules: {
       // Type Safety
@@ -61,12 +58,12 @@ export default tseslint.config(
       ],
       '@typescript-eslint/no-unused-vars': [
         'error',
-        { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }
+        { argsIgnorePattern: '^_', varsIgnorePattern: '^_' },
       ],
 
       // Gerais
       'no-debugger': 'error',
-      'no-console': ['warn', { allow: ['warn', 'error', 'debug'] }]
+      'no-console': ['warn', { allow: ['warn', 'error', 'debug'] }],
     },
   },
 
@@ -85,7 +82,7 @@ export default tseslint.config(
       '*.config.cjs',
       'commitlint.config.js',
       'vitest*.config.ts',
-      'tsup.config.ts'
+      'tsup.config.ts',
     ],
     extends: [tseslint.configs.disableTypeChecked],
     rules: {
@@ -180,7 +177,7 @@ export default tseslint.config(
     rules: {
       '@typescript-eslint/no-explicit-any': 'off',
       '@typescript-eslint/consistent-type-imports': 'off',
-      'no-console': 'off'
-    }
-  }
+      'no-console': 'off',
+    },
+  },
 );
