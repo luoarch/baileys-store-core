@@ -209,29 +209,30 @@ app.listen(3000, () => {
 ### 1.1 Adicionar Diagramas de Arquitetura 🟢 ⭐⭐⭐
 
 **Complexidade:** Fácil (1.5 dias)  
-**Impacto:** Alto - Crítico para documentação científica
+**Impacto:** Alto - Crítico para documentação científica  
+**Status:** ✅ **Concluído**
 
-**Arquivos a criar:**
-- `docs/diagrams/architecture.md` - Arquitetura geral
-- `docs/diagrams/read-path.md` - Fluxo de leitura
-- `docs/diagrams/write-path.md` - Fluxo de escrita  
-- `docs/diagrams/circuit-breaker.md` - Estados do circuit breaker
-- `docs/diagrams/data-consistency.md` - 🆕 Modelo de consistência
-- `docs/diagrams/versioning.md` - 🆕 Estratégia de versionamento
+**Arquivos criados:**
+- ✅ `docs/diagrams/architecture.md` - Arquitetura geral
+- ✅ `docs/diagrams/read-path.md` - Fluxo de leitura
+- ✅ `docs/diagrams/write-path.md` - Fluxo de escrita  
+- ✅ `docs/diagrams/circuit-breaker.md` - Estados do circuit breaker
+- ✅ `docs/diagrams/data-consistency.md` - Modelo de consistência
+- ✅ `docs/diagrams/versioning.md` - Estratégia de versionamento
 
 **Checklist Expandido:**
-- [ ] Criar diretório `docs/diagrams/`
-- [ ] Diagrama de arquitetura hybrid storage (Mermaid)
-- [ ] Sequence diagram do read path (cache hit/miss)
-- [ ] Sequence diagram do write path (sync + async)
-- [ ] State diagram do circuit breaker (closed/open/half-open)
-- [ ] Diagrama de outbox pattern com reconciliation
-- [ ] 🆕 Diagrama de **modelo de consistência** (eventual vs strong)
-- [ ] 🆕 Diagrama de **event timeline** para ops assíncronas
-- [ ] 🆕 Diagrama de **fallback paths** visuais
-- [ ] 🆕 Diagrama de **data migration strategy** (v1→v2)
-- [ ] 🆕 **Diagrama de capacity planning** (single/hybrid/sharded)
-- [ ] Atualizar README.md com links para diagramas
+- ✅ Criar diretório `docs/diagrams/`
+- ✅ Diagrama de arquitetura hybrid storage (Mermaid)
+- ✅ Sequence diagram do read path (cache hit/miss)
+- ✅ Sequence diagram do write path (sync + async)
+- ✅ State diagram do circuit breaker (closed/open/half-open)
+- ✅ Diagrama de outbox pattern com reconciliation (incluído no write-path.md)
+- ✅ Diagrama de **modelo de consistência** (eventual vs strong)
+- [ ] Diagrama de **event timeline** para ops assíncronas (pendente)
+- [ ] Diagrama de **fallback paths** visuais (pendente)
+- [ ] Diagrama de **data migration strategy** (v1→v2) (pendente)
+- [ ] **Diagrama de capacity planning** (single/hybrid/sharded) (pendente)
+- ✅ Atualizar README.md com links para diagramas
 - [ ] Validar diagramas com reviewers
 
 **Exemplo - Modelo de Consistência:**
@@ -902,9 +903,157 @@ const config = {
 
 ---
 
-## 📅 Fase 4-7: [Continue com as fases restantes...]
+## 📅 Fase 4: Batch Operations + Observability Enhancement (Semana 4-6) 🔄
 
-_(Continua com Batch Operations, Observabilidade, Testes, Performance)_
+### 4.1 Implementar Batch Operations 🟡 ⭐⭐⭐
+
+**Complexidade:** Médio (3 dias)  
+**Impacto:** Alto - Operações em lote para alta performance
+
+**Arquivos a modificar:**
+- `src/hybrid/store.ts` - Adicionar batchGet, batchSet, batchDelete
+- `src/redis/store.ts` - Implementar Redis pipeline
+- `src/mongodb/store.ts` - Implementar MongoDB bulk operations
+
+**Checklist:**
+- [ ] Implementar `batchGet(sessionIds: SessionId[]): Promise<Map<SessionId, Versioned<AuthSnapshot>>>`
+- [ ] Implementar `batchSet(updates: BatchUpdate[]): Promise<Map<SessionId, VersionedResult>>`
+- [ ] Implementar `batchDelete(sessionIds: SessionId[]): Promise<void>`
+- [ ] Usar Redis pipeline para batchGet (reduz round-trips)
+- [ ] Usar MongoDB bulk operations para batchSet
+- [ ] Adicionar testes unitários para batch operations
+- [ ] Adicionar testes de performance (benchmarks)
+- [ ] Adicionar métricas de batch operations
+
+**Casos de uso:**
+- Warm cache em bulk para múltiplas sessões
+- Cleanup de sessões expiradas em batch
+- Migration de dados
+
+### 4.2 Enhanced Health Checks 🟢 ⭐⭐⭐
+
+**Complexidade:** Fácil (2 dias)  
+**Impacto:** Alto - Critical para produção K8s/health checks
+
+**Status:** ✅ **Concluído**
+
+**Arquivos criados:**
+- ✅ `src/health/health-check.ts` - Health check utilities
+- ✅ `src/health/index.ts` - Barrel export
+
+**Arquivos a modificar:**
+- [ ] `src/hybrid/store.ts` - Adicionar health check methods
+- [ ] `examples/production-setup.ts` - Integrar health checks
+
+**Checklist:**
+- ✅ Criar `performHealthCheck()` retornando:
+  - ✅ Redis connectivity
+  - ✅ MongoDB connectivity
+  - ✅ Circuit breaker status
+  - ✅ Outbox lag
+  - ✅ Cache hit rate
+  - ✅ Metadata (cache hit rate, outbox lag, circuit breaker state)
+- ✅ Criar `isReady()` para readiness probe (permite graceful degradation)
+- ✅ Criar `isLive()` para liveness probe (alive se não está completamente unhealthy)
+- ✅ Criar interfaces `ComponentHealth` e `HealthStatus`
+- ✅ Criar interface `HealthCheckConfig` para configuração flexível
+- [ ] Adicionar endpoint Express `/health` no exemplo production-setup.ts
+- [ ] Adicionar endpoint `/ready` para K8s readiness probe
+- [ ] Adicionar endpoint `/metrics` (já existe, verificar)
+
+### 4.3 Observability Enhancements 🟡 ⭐⭐
+
+**Complexidade:** Médio (3 dias)  
+**Impacto:** Médio - Melhora debugging e monitoramento
+
+**Arquivos a modificar:**
+- `src/metrics/index.ts` - Adicionar novas métricas
+- `src/hybrid/store.ts` - Instrumentar operações adicionais
+
+**Checklist:**
+- [ ] Adicionar métricas de batch operations:
+  - `batch_operations_total{type, result}`
+  - `batch_operations_duration_seconds{type}`
+- [ ] Adicionar gauge de circuit breaker state transitions
+- [ ] Adicionar histogram de outbox reconciliation timing
+- [ ] Adicionar counter de version conflicts
+- [ ] Melhorar logging de operações críticas com contexto
+
+### 4.4 Correlation ID Enhancements 🟢 ⭐⭐
+
+**Complexidade:** Fácil (1 dia)  
+**Impacto:** Médio - Melhora traceability
+
+**Arquivos a modificar:**
+- `src/context/execution-context.ts` - Adicionar helpers
+- `src/hybrid/store.ts` - Usar correlation IDs em logs
+
+**Checklist:**
+- [ ] Adicionar helper `withCorrelationId(correlationId, fn)`
+- [ ] Adicionar helper `getCorrelationId()` 
+- [ ] Propagar correlation ID automaticamente em todas operações
+- [ ] Adicionar correlation ID nos logs estruturados
+- [ ] Documentar uso de correlation IDs
+
+### 4.5 Benchmarks e Performance Tests 🟡 ⭐⭐
+
+**Complexidade:** Médio (2 dias)  
+**Impacto:** Médio - Valida performance
+
+**Arquivos a criar:**
+- `src/__tests__/performance/batch-operations.test.ts`
+- `src/__tests__/performance/benchmark.test.ts`
+- `docs/BENCHMARKS.md`
+
+**Checklist:**
+- [ ] Benchmarks de batchGet (100, 500, 1000 sessions)
+- [ ] Benchmarks de batchSet (100, 500, 1000 updates)
+- [ ] Benchmarks de cache hit vs miss performance
+- [ ] Documentar resultados em `docs/BENCHMARKS.md`
+- [ ] Adicionar benchmarks ao CI (não fail, apenas reportar)
+
+---
+
+## 📅 Fase 5: Coverage Enhancement + Advanced Testing (Semana 6-8) ⏳
+
+### 5.1 Aumentar Coverage para 85%+ 🟡 ⭐⭐⭐
+
+**Complexidade:** Médio (4 dias)  
+**Impacto:** Alto - Requisito para produção/JOSS
+
+**Checklist:**
+- [ ] Identificar áreas com baixa cobertura (test:coverage --reporter=html)
+- [ ] Adicionar testes para edge cases
+- [ ] Adicionar testes de error paths
+- [ ] Adicionar testes de race conditions
+- [ ] Adicionar testes de circuit breaker edge cases
+- [ ] Adicionar testes de outbox reconciliation edge cases
+- [ ] Validar coverage >= 85% lines, 80% branches
+
+### 5.2 Integration Tests Expandidos 🟢 ⭐⭐
+
+**Complexidade:** Fácil (2 dias)  
+**Impacto:** Médio - Melhora confiabilidade
+
+**Checklist:**
+- [ ] Testes de integração batch operations
+- [ ] Testes de integração health checks
+- [ ] Testes de integração correlation IDs
+- [ ] Testes de integração circuit breaker recovery
+
+### 5.3 Load Testing 🟡 ⭐⭐
+
+**Complexidade:** Médio (3 dias)  
+**Impacto:** Médio - Valida escalabilidade
+
+**Arquivos a criar:**
+- `src/__tests__/load/load-test.test.ts` (usando k6 ou similar)
+
+**Checklist:**
+- [ ] Teste de carga: 1000 ops/sec por 5 minutos
+- [ ] Teste de stress: 5000 ops/sec por 30 segundos
+- [ ] Monitorar: memoria, CPU, latência
+- [ ] Documentar resultados e limites
 
 ---
 
@@ -944,17 +1093,22 @@ _(Continua com Batch Operations, Observabilidade, Testes, Performance)_
 
 ## 📊 Cronograma Completo Revisado
 
-| Fase | Duração | Entregas Principais |
-|---|---|---|
-| **Fase 0** | 1 semana | Foundation, CI/CD, exemplos production-ready |
-| **Fase 1** | 2 semanas | Diagramas, error hierarchy, JSDoc completo |
-| **Fase 2** | 2 semanas | Logger estruturado, AsyncLocalStorage, refatoração |
-| **Fase 3** | 2 semanas | Zod schemas, presets, validation reporter |
-| **Fase 4** | 2 semanas | Batch operations, benchmarks |
-| **Fase 5** | 2 semanas | Health checks, correlation IDs, metrics |
-| **Fase 6** | 2 semanas | 85% coverage, testes de carga |
-| **Fase 7** | 2 semanas | Performance opts, polish final |
-| **Total** | **15 semanas** | **v1.0.0 production-ready + JOSS submission** |
+| Fase | Status | Duração | Entregas Principais |
+|---|---|---|---|
+| **Fase 0** | ✅ Concluída | 1 semana | Foundation, CI/CD, exemplos production-ready |
+| **Fase 1** | ✅ Concluída | 2 semanas | Diagramas, error hierarchy, JSDoc completo |
+| **Fase 2** | ✅ Concluída | 2 semanas | Logger estruturado, AsyncLocalStorage, refatoração |
+| **Fase 3** | ✅ Concluída | 2 semanas | Zod schemas, presets, validation reporter |
+| **Fase 4** | 🔄 Em Progresso | 2 semanas | Health checks, observability, batch operations |
+| **Fase 5** | ⏳ Pendente | 2 semanas | Coverage 85%+, testes de carga |
+| **Total** | **4/5 Concluídas** | **~6 semanas** | **v1.0.0-rc.1 em desenvolvimento** |
+
+**Progresso da Fase 4:**
+- ✅ 4.2 Enhanced Health Checks (100% concluído)
+- ⏳ 4.1 Batch Operations (pendente)
+- ⏳ 4.3 Observability Enhancements (pendente)
+- ⏳ 4.4 Correlation ID Enhancements (pendente)
+- ⏳ 4.5 Benchmarks e Performance Tests (pendente)
 
 ---
 
