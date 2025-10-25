@@ -28,6 +28,9 @@ README_PROGRESS.md
 STATUS.md
 *.plan.md
 
+# Ensure LICENSE is included in package
+!LICENSE
+
 # Logs and temporary files
 logs/
 *.log
