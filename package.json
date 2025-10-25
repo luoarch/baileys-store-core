@@ -191,7 +191,7 @@
     "opossum": "^9.0.0",
     "prom-client": "^15.1.0",
     "tweetnacl": "^1.0.3",
-    "zod": "^3.22.4"
+    "zod": "^4.1.12"
   },
   "devDependencies": {
     "@commitlint/cli": "^20.0.0",
