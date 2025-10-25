@@ -18,6 +18,7 @@ import type {
   AuthPatch,
   Versioned,
   VersionedResult,
+  BatchResult,
   StructuredLogger,
 } from '../types/index.js';
 import { StorageError, VersionMismatchError, assertBufferTypes, NullLoggerStructured } from '../types/index.js';
@@ -34,6 +35,8 @@ import {
   circuitBreakerOpenCounter,
   circuitBreakerCloseCounter,
   circuitBreakerHalfOpenCounter,
+  batchOperationsCounter,
+  batchOperationsDurationHistogram,
   metricsRegistry,
 } from '../metrics/index.js';
 import { OutboxManager } from './outbox.js';
@@ -648,6 +651,167 @@ export class HybridAuthStore implements AuthStore {
       queueFailures: 0,
       directWrites: 0,
     };
+  }
+
+  /**
+   * Batch get multiple snapshots
+   * Optimized for fetching many sessions at once
+   * 
+   * @param sessionIds - Array of session IDs to fetch
+   * @returns Map of sessionId -> snapshot (or null if not found)
+   * 
+   * @example
+   * ```typescript
+   * const sessions = await store.batchGet(['session1', 'session2', 'session3']);
+   * for (const [sessionId, snapshot] of sessions) {
+   *   if (snapshot) {
+   *     console.log(`Found ${sessionId}: version ${snapshot.version}`);
+   *   }
+   * }
+   * ```
+   */
+  async batchGet(sessionIds: SessionId[]): Promise<Map<SessionId, Versioned<AuthSnapshot> | null>> {
+    const results = new Map<SessionId, Versioned<AuthSnapshot> | null>();
+    const startTime = Date.now();
+    const context = getContext();
+
+    this.logger.debug('Starting batch get', {
+      count: sessionIds.length,
+      action: 'batch_get_start',
+      correlationId: context?.correlationId,
+    });
+
+    // Try Redis pipeline first (best performance)
+    const redisResults = new Map<SessionId, Versioned<AuthSnapshot> | null>();
+    const mongoIds: SessionId[] = [];
+
+    for (const sessionId of sessionIds) {
+      try {
+        const cached = await this.redis.get(sessionId);
+        redisResults.set(sessionId, cached);
+        if (cached) {
+          redisHitsCounter.inc({ session_id: sessionId });
+        } else {
+          redisMissesCounter.inc({ session_id: sessionId });
+          mongoIds.push(sessionId);
+        }
+      } catch (error) {
+        this.logger.warn('Redis batch get failed, will fallback to MongoDB', {
+          sessionId,
+          error: error instanceof Error ? error.message : String(error),
+          action: 'batch_get_redis_fallback',
+        });
+        mongoIds.push(sessionId);
+      }
+    }
+
+    // Fetch missing items from MongoDB
+    if (mongoIds.length > 0) {
+      for (const sessionId of mongoIds) {
+        try {
+          const data = await this.mongoCircuitBreaker.fire(() => this.mongo.get(sessionId));
+          redisResults.set(sessionId, data);
+          
+          if (data) {
+            mongoFallbacksCounter.inc({ session_id: sessionId });
+            // Warm cache asynchronously
+            this.warmCache(sessionId, data).catch(() => {
+              this.logger.warn('Cache warming failed during batch', {
+                sessionId,
+                action: 'batch_get_cache_warming_failed',
+              });
+            });
+          }
+        } catch (error) {
+          this.logger.error('MongoDB batch get failed', error instanceof Error ? error : undefined, {
+            sessionId,
+            action: 'batch_get_mongo_error',
+            correlationId: context?.correlationId,
+          });
+        }
+      }
+    }
+
+    // Merge results
+    for (const [sessionId, value] of redisResults) {
+      results.set(sessionId, value);
+    }
+
+    const duration = Date.now() - startTime;
+    
+    // Record metrics
+    batchOperationsCounter.inc({ type: 'get', result: 'success' }, sessionIds.length);
+    batchOperationsDurationHistogram.observe({ type: 'get', result: 'success' }, duration / 1000);
+    
+    this.logger.debug('Batch get completed', {
+      count: sessionIds.length,
+      hitCount: redisResults.size,
+      duration,
+      action: 'batch_get_completed',
+      correlationId: context?.correlationId,
+    });
+
+    return results;
+  }
+
+  /**
+   * Batch delete multiple snapshots
+   * Optimized for removing many sessions at once
+   * 
+   * @param sessionIds - Array of session IDs to delete
+   * @returns Batch result with successful and failed operations
+   * 
+   * @example
+   * ```typescript
+   * const result = await store.batchDelete(['session1', 'session2']);
+   * console.log(`Deleted ${result.successful.size} sessions`);
+   * console.log(`Failed ${result.failed.size} deletions`);
+   * ```
+   */
+  async batchDelete(sessionIds: SessionId[]): Promise<BatchResult<void>> {
+    const successful = new Map<SessionId, void>();
+    const failed = new Map<SessionId, Error>();
+    const startTime = Date.now();
+    const context = getContext();
+
+    this.logger.debug('Starting batch delete', {
+      count: sessionIds.length,
+      action: 'batch_delete_start',
+      correlationId: context?.correlationId,
+    });
+
+    for (const sessionId of sessionIds) {
+      try {
+        await this.delete(sessionId);
+        successful.set(sessionId, undefined);
+      } catch (error) {
+        const err = error instanceof Error ? error : new Error(String(error));
+        failed.set(sessionId, err);
+        this.logger.error('Batch delete failed for session', err, {
+          sessionId,
+          action: 'batch_delete_failed',
+          correlationId: context?.correlationId,
+        });
+      }
+    }
+
+    const duration = Date.now() - startTime;
+    
+    // Record metrics
+    batchOperationsCounter.inc({ type: 'delete', result: 'success' }, successful.size);
+    batchOperationsCounter.inc({ type: 'delete', result: 'failure' }, failed.size);
+    batchOperationsDurationHistogram.observe({ type: 'delete', result: failed.size > 0 ? 'partial' : 'success' }, duration / 1000);
+    
+    this.logger.debug('Batch delete completed', {
+      count: sessionIds.length,
+      successfulCount: successful.size,
+      failedCount: failed.size,
+      duration,
+      action: 'batch_delete_completed',
+      correlationId: context?.correlationId,
+    });
+
+    return { successful, failed };
   }
 
   // ========== Private methods ==========

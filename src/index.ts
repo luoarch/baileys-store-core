@@ -17,6 +17,8 @@ export type {
   AuthPatch,
   Versioned,
   VersionedResult,
+  BatchUpdate,
+  BatchResult,
   AuthStore,
   TtlConfig,
   ResilienceConfig,

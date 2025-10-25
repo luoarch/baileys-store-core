@@ -1120,7 +1120,7 @@ const config = {
 - ✅ 4.2 Enhanced Health Checks (100% concluído)
 - ✅ 4.3 Observability Enhancements (100% concluído)
 - ✅ 4.4 Correlation ID Enhancements (100% concluído)
-- ⏳ 4.1 Batch Operations (pendente)
+- ✅ 4.1 Batch Operations (parcialmente concluído: batchGet e batchDelete)
 - ⏳ 4.5 Benchmarks e Performance Tests (pendente)
 
 ---
