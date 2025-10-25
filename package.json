@@ -1,6 +1,6 @@
 {
   "name": "@luoarch/baileys-store-core",
-  "version": "1.0.0-rc.1",
+  "version": "1.0.0-rc.2",
   "description": "Universal authentication state management for Baileys v7.0+ with Redis, MongoDB, and hybrid storage support",
   "type": "module",
   "sideEffects": false,
@@ -131,7 +131,7 @@
     "presets:validate": "tsx scripts/validate-presets.ts",
     "coverage:check": "node scripts/check-coverage.js",
     "prepublishOnly": "yarn clean && yarn build && yarn test && yarn lint && npm pack --dry-run",
-    "prepare": "husky"
+    "prepare": "node -e \"const fs = require('fs'); if (fs.existsSync('.git')) { require('husky').install() }\""
   },
   "lint-staged": {
     "*.{ts,tsx}": [
@@ -205,7 +205,6 @@
     "@commitlint/cli": "^20.0.0",
     "@commitlint/config-conventional": "^20.0.0",
     "@eslint/js": "^9.38.0",
-    "@hapi/boom": "^10.0.1",
     "@semantic-release/changelog": "^6.0.3",
     "@semantic-release/git": "^10.0.1",
     "@semantic-release/npm": "^13.1.1",
