@@ -108,3 +108,28 @@ export {
   getMetricsText,
   resetMetrics,
 } from './metrics/index.js';
+
+// ========== Logger & Context ==========
+export { ConsoleStructuredLogger, NullLogger, LogLevel } from './logger/index.js';
+export type { StructuredLogger, LogContext } from './logger/index.js';
+
+export {
+  getContext,
+  withContext,
+  getCorrelationId,
+  getRequestId,
+  getOperationDuration,
+} from './context/execution-context.js';
+
+export type { ExecutionContext } from './context/execution-context.js';
+
+// ========== Errors ==========
+export {
+  ErrorDomain,
+  ErrorSeverity,
+  ErrorCode,
+  getErrorMetadata,
+  isRetryable,
+  getRetryDelay,
+} from './errors/hierarchy.js';
+export type { ErrorMetadata } from './errors/hierarchy.js';
