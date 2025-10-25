@@ -11,6 +11,7 @@ import type { MongoAuthStore } from '../../mongodb/store.js';
 import type { AuthPatch, Versioned, AuthSnapshot } from '../../types/index.js';
 import { VersionMismatchError } from '../../types/index.js';
 import type { QueueAdapter } from '../../types/queue.js';
+import { withContext } from '../../context/execution-context.js';
 
 // Mock stores
 class MockRedisStore {
@@ -2283,6 +2284,167 @@ describe('HybridAuthStore', () => {
       expect(outboxStats).toBeNull();
 
       await noQueueStore.disconnect();
+    });
+  });
+
+  describe('Batch Operations', () => {
+    it('should batch get multiple sessions from Redis cache', async () => {
+      await store.connect();
+
+      // Setup: add data to Redis
+      const session1 = 'session-batch-1';
+      const session2 = 'session-batch-2';
+      const session3 = 'session-batch-3';
+
+      const data1: Versioned<AuthSnapshot> = {
+        data: { creds: {} as any, keys: {} as any },
+        version: 1,
+        updatedAt: new Date(),
+      };
+      const data2: Versioned<AuthSnapshot> = {
+        data: { creds: {} as any, keys: {} as any },
+        version: 1,
+        updatedAt: new Date(),
+      };
+
+      // Mock Redis.get to return different values based on session ID
+      vi.spyOn(redis, 'get').mockImplementation((id: string) => {
+        if (id === session1) return Promise.resolve(data1);
+        if (id === session2) return Promise.resolve(data2);
+        return Promise.resolve(null);
+      });
+
+      const results = await store.batchGet([session1, session2, session3]);
+
+      expect(results.size).toBe(3);
+      expect(results.get(session1)).toEqual(data1);
+      expect(results.get(session2)).toEqual(data2);
+      expect(results.get(session3)).toBeNull();
+
+      await store.disconnect();
+    });
+
+    it('should fallback to MongoDB when Redis fails in batch get', async () => {
+      await store.connect();
+
+      const session1 = 'session-fallback-1';
+      const session2 = 'session-fallback-2';
+
+      const mongoData: Versioned<AuthSnapshot> = {
+        data: { creds: {} as any, keys: {} as any },
+        version: 1,
+        updatedAt: new Date(),
+      };
+
+      // Mock Redis to fail
+      vi.spyOn(redis, 'get').mockRejectedValueOnce(new Error('Redis unavailable'));
+
+      // Mock MongoDB to return data
+      vi.spyOn(mongo, 'get').mockResolvedValueOnce(mongoData);
+
+      const results = await store.batchGet([session1, session2]);
+
+      expect(results.size).toBe(2);
+      expect(mongo.get).toHaveBeenCalled();
+      // Session2 will be null since Redis failed and MongoDB only returns for session1
+
+      await store.disconnect();
+    });
+
+    it('should propagate correlation ID through batch operations', async () => {
+      await store.connect();
+
+      const correlationId = 'test-correlation-123';
+
+      const data: Versioned<AuthSnapshot> = {
+        data: { creds: {} as any, keys: {} as any },
+        version: 1,
+        updatedAt: new Date(),
+      };
+
+      vi.spyOn(redis, 'get').mockResolvedValue(data);
+      vi.spyOn((store as any).logger, 'debug');
+
+      await withContext({ correlationId }, async () => {
+        await store.batchGet(['session-1', 'session-2']);
+      });
+
+      // Verify logger was called with correlationId
+      const logCalls = ((store as any).logger.debug).mock.calls;
+      const hasCorrelationId = logCalls.some((call: unknown[]) => 
+        call.some((arg: unknown) => 
+          typeof arg === 'object' && arg !== null && 'correlationId' in arg && (arg as { correlationId?: string }).correlationId === correlationId
+        )
+      );
+      expect(hasCorrelationId).toBe(true);
+
+      await store.disconnect();
+    });
+
+    it('should handle batch delete with partial failures', async () => {
+      await store.connect();
+
+      const session1 = 'session-delete-1';
+      const session2 = 'session-delete-2';
+
+      // Mock Redis to succeed for session1 and fail for session2
+      let callCount = 0;
+      vi.spyOn(redis, 'delete').mockImplementation((id: string) => {
+        callCount++;
+        if (id === session2 && callCount === 2) {
+          return Promise.reject(new Error('Redis delete failed'));
+        }
+        return Promise.resolve();
+      });
+
+      vi.spyOn(mongo, 'delete').mockImplementation((id: string) => {
+        if (id === session2) {
+          return Promise.reject(new Error('MongoDB delete failed'));
+        }
+        return Promise.resolve();
+      });
+
+      const result = await store.batchDelete([session1, session2]);
+
+      expect(result.successful.size).toBe(1);
+      expect(result.failed.size).toBe(1);
+      expect(result.successful.has(session1)).toBe(true);
+      expect(result.failed.has(session2)).toBe(true);
+
+      await store.disconnect();
+    });
+
+    it('should track metrics for batch operations', async () => {
+      await store.connect();
+
+      const data: Versioned<AuthSnapshot> = {
+        data: { creds: {} as any, keys: {} as any },
+        version: 1,
+        updatedAt: new Date(),
+      };
+
+      vi.spyOn(redis, 'get').mockResolvedValue(data);
+
+      await store.batchGet(['session-1', 'session-2']);
+
+      // Metrics should be recorded (we can't easily verify Prometheus metrics in tests,
+      // but we can verify the code path was executed)
+      expect(redis.get).toHaveBeenCalledTimes(2);
+
+      await store.disconnect();
+    });
+
+    it('should handle empty batch operations', async () => {
+      await store.connect();
+
+      const results = await store.batchGet([]);
+      expect(results.size).toBe(0);
+
+      const deleteResult = await store.batchDelete([]);
+      expect(deleteResult.successful.size).toBe(0);
+      expect(deleteResult.failed.size).toBe(0);
+
+      await store.disconnect();
     });
   });
 });
