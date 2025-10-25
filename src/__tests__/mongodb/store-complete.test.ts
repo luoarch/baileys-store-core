@@ -56,10 +56,20 @@ describe('MongoAuthStore - Complete Coverage', () => {
   let store: MongoAuthStore;
   let mockCrypto: any;
   let mockCodec: any;
+  let mockLogger: any;
   let config: any;
 
   beforeEach(() => {
     vi.clearAllMocks();
+
+    // Mock logger
+    mockLogger = {
+      trace: vi.fn(),
+      debug: vi.fn(),
+      info: vi.fn(),
+      warn: vi.fn(),
+      error: vi.fn(),
+    };
 
     // Mock crypto service
     mockCrypto = {
@@ -97,6 +107,7 @@ describe('MongoAuthStore - Complete Coverage', () => {
         retryMultiplier: 2,
       },
       enableTls: false,
+      logger: mockLogger,
     };
 
     store = new MongoAuthStore(config, mockCrypto, mockCodec);
@@ -168,24 +179,24 @@ describe('MongoAuthStore - Complete Coverage', () => {
       const errorCall = mockClient.on.mock.calls.find((call) => call[0] === 'error');
       expect(errorCall).toBeDefined();
       const errorHandler = errorCall![1];
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
       errorHandler(new Error('Client error'));
 
-      expect(consoleSpy).toHaveBeenCalledWith('MongoDB client error:', expect.any(Object));
-      consoleSpy.mockRestore();
+      expect(mockLogger.error).toHaveBeenCalledWith('MongoDB client error', expect.any(Error), {
+        action: 'mongo_client_error',
+      });
     });
 
     it('should handle client close event', () => {
       const closeCall = mockClient.on.mock.calls.find((call) => call[0] === 'close');
       expect(closeCall).toBeDefined();
       const closeHandler = closeCall![1];
-      const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
       closeHandler();
 
-      expect(consoleSpy).toHaveBeenCalledWith('MongoDB client closed', expect.any(Object));
-      consoleSpy.mockRestore();
+      expect(mockLogger.warn).toHaveBeenCalledWith('MongoDB client closed', {
+        action: 'mongo_client_closed',
+      });
     });
 
     it('should check health status', async () => {

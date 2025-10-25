@@ -214,6 +214,7 @@ export function getPreset(name: PresetName): ConfigPreset {
  *
  * @param preset - Preset to validate
  * @returns Array of validation errors (empty if valid)
+ * @deprecated Use validatePreset from src/validation/reporter.ts instead
  */
 export function validatePreset(preset: ConfigPreset): string[] {
   const errors: string[] = [];

@@ -51,7 +51,6 @@ export {
   PRESETS,
   createHybridConfigFromPreset,
   getPreset,
-  validatePreset,
 } from './config/presets.js';
 
 export type { ConfigPreset, PresetName } from './config/presets.js';

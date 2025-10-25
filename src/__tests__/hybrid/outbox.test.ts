@@ -12,6 +12,15 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { OutboxManager } from '../../hybrid/outbox';
 
+// Mock Logger
+const createMockLogger = () => ({
+  trace: vi.fn(),
+  debug: vi.fn(),
+  info: vi.fn(),
+  warn: vi.fn(),
+  error: vi.fn(),
+});
+
 // Mock Redis
 const createMockRedis = () => ({
   hset: vi.fn().mockResolvedValue(1),
@@ -34,12 +43,14 @@ const createMockMongoStore = () => ({
 describe('OutboxManager - Complete Coverage', () => {
   let mockRedis: ReturnType<typeof createMockRedis>;
   let mockMongo: ReturnType<typeof createMockMongoStore>;
+  let mockLogger: ReturnType<typeof createMockLogger>;
   let outbox: OutboxManager;
 
   beforeEach(() => {
     mockRedis = createMockRedis();
     mockMongo = createMockMongoStore();
-    outbox = new OutboxManager(mockRedis as any, mockMongo as any);
+    mockLogger = createMockLogger();
+    outbox = new OutboxManager(mockRedis as any, mockMongo as any, mockLogger as any);
   });
 
   afterEach(() => {
@@ -947,37 +958,28 @@ describe('OutboxManager - Complete Coverage', () => {
     });
 
     it('should not start reconciler if already running', () => {
-      const consoleWarn = vi.spyOn(console, 'warn').mockImplementation(() => {});
-
       outbox.startReconciler();
       outbox.startReconciler();
 
-      expect(consoleWarn).toHaveBeenCalledWith('Outbox reconciler already running');
-
-      consoleWarn.mockRestore();
+      expect(mockLogger.warn).toHaveBeenCalledWith('Outbox reconciler already running', {
+        action: 'outbox_reconciler_already_running',
+      });
     });
 
     it('should stop reconciler', () => {
       vi.useFakeTimers();
-      const consoleWarn = vi.spyOn(console, 'warn').mockImplementation(() => {});
-
       outbox.startReconciler();
       outbox.stopReconciler();
 
-      expect(consoleWarn).toHaveBeenCalledWith(
-        'Outbox reconciler stopped',
-        expect.objectContaining({
-          action: 'outbox_reconciler_stop',
-        }),
-      );
+      expect(mockLogger.warn).toHaveBeenCalledWith('Outbox reconciler stopped', {
+        action: 'outbox_reconciler_stop',
+      });
 
-      consoleWarn.mockRestore();
       vi.useRealTimers();
     });
 
     it('should handle reconciler unhandled errors', async () => {
       vi.useFakeTimers();
-      const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
       vi.spyOn(outbox, 'reconcile').mockRejectedValue(new Error('Reconciliation failed'));
 
       outbox.startReconciler();
@@ -986,12 +988,14 @@ describe('OutboxManager - Complete Coverage', () => {
       await vi.advanceTimersByTimeAsync(30000);
 
       // O erro deve ser capturado e logado
-      expect(consoleError).toHaveBeenCalledWith(
-        expect.stringContaining('Outbox reconciler'),
-        expect.any(Object),
+      expect(mockLogger.error).toHaveBeenCalledWith(
+        'Outbox reconciler unhandled error',
+        expect.any(Error),
+        expect.objectContaining({
+          action: 'outbox_reconciler_unhandled_error',
+        }),
       );
 
-      consoleError.mockRestore();
       vi.useRealTimers();
     }, 10000); // Timeout de 10 segundos
   });
