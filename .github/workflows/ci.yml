@@ -77,6 +77,12 @@ jobs:
         run: yarn test:coverage
         if: matrix.node == '22.x'
 
+      - name: Enforce Coverage Thresholds
+        if: matrix.node == '22.x'
+        run: |
+          yarn coverage:check
+        continue-on-error: false
+
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v5
         if: matrix.node == '22.x'
@@ -84,6 +90,11 @@ jobs:
           files: ./coverage/lcov.info
           flags: unittests
           name: codecov-umbrella
+
+      - name: Run Mutation Tests
+        if: matrix.node == '22.x'
+        run: yarn test:mutation
+        continue-on-error: true
 
       - name: Security audit
         run: npm audit --production --audit-level=high

@@ -25,6 +25,8 @@ Production-grade authentication state management for Baileys v7.0+ with Redis, M
 - 🛡️ **Fault Tolerant** - Graceful degradation, partial failure compensation
 - 📦 **Tree-Shakeable** - Granular exports, only import what you need
 - 🧪 **Well-Tested** - 52 tests (unit + integration + E2E)
+- ⚙️ **Config Presets** - Development, Production, and Testing configurations out of the box
+- 📚 **Well-Documented** - ADRs, SLA, Research documentation
 
 ## Quick Start (RC1)
 
@@ -41,49 +43,24 @@ npm install @luoarch/baileys-store-core
 
 > **Note:** Stable version not yet available. Use `@next` tag to test RC1.
 
-### Hybrid Storage (Recommended)
+### Hybrid Storage with Config Presets (Recommended)
 
 ```typescript
 import { makeWASocket } from '@whiskeysockets/baileys';
-import { useHybridAuthState } from '@luoarch/baileys-store-core/hybrid';
+import { useHybridAuthState, createHybridConfigFromPreset } from '@luoarch/baileys-store-core/hybrid';
+
+// Use PRODUCTION preset with minimal configuration
+const config = createHybridConfigFromPreset('PRODUCTION', {
+  redisUrl: process.env.REDIS_URL || 'redis://localhost:6379',
+  mongoUrl: process.env.MONGO_URL || 'mongodb://localhost:27017',
+  mongoDatabase: 'whatsapp',
+  mongoCollection: 'auth',
+  masterKey: process.env.BAILEYS_MASTER_KEY, // 64-char hex key
+});
 
 const { state, saveCreds, store } = await useHybridAuthState({
   sessionId: 'my-session',
-  hybrid: {
-    redisUrl: 'redis://localhost:6379',
-    mongoUrl: 'mongodb://localhost:27017',
-    mongoDatabase: 'whatsapp',
-    mongoCollection: 'auth',
-    ttl: {
-      defaultTtl: 30 * 24 * 60 * 60, // 30 days
-      credsTtl: 30 * 24 * 60 * 60,
-      keysTtl: 30 * 24 * 60 * 60,
-      lockTtl: 5,
-    },
-    masterKey: process.env.BAILEYS_MASTER_KEY, // 64-char hex key
-    security: {
-      enableEncryption: false, // Set true in production
-      enableCompression: false,
-      encryptionAlgorithm: 'secretbox',
-      compressionAlgorithm: 'snappy',
-      keyRotationDays: 90,
-      enableDebugLogging: false, // Set true for development debugging
-      environment: 'production', // 'development' | 'production' | 'test'
-    },
-    resilience: {
-      operationTimeout: 5000,
-      maxRetries: 3,
-      retryBaseDelay: 100,
-      retryMultiplier: 2,
-    },
-    observability: {
-      enableMetrics: true,
-      enableTracing: false,
-      enableDetailedLogs: false,
-      metricsInterval: 60000,
-    },
-    enableWriteBehind: false, // Set true with queue for async MongoDB writes
-  },
+  hybrid: config,
 });
 
 const socket = makeWASocket({ auth: state });
@@ -267,6 +244,48 @@ interface OutboxEntry {
 ```
 
 **TTL:** 7 days (auto-cleanup)
+
+## Documentation
+
+- **[ARCHITECTURE.md](./ARCHITECTURE.md)** - Architecture Decision Records (ADRs) documenting key design decisions
+- **[docs/SLA.md](./docs/SLA.md)** - Service Level Objectives (SLOs) and metrics
+- **[docs/RESEARCH.md](./docs/RESEARCH.md)** - Research contributions and academic context
+- **[docs/PAPER.md](./docs/PAPER.md)** - Full academic paper
+- **[ROADMAP.md](./ROADMAP.md)** - Development roadmap and milestones
+
+## Config Presets
+
+Pre-configured presets for different environments:
+
+### DEVELOPMENT
+- Short TTLs (5 minutes) for rapid iteration
+- Long timeouts (10s) for debugging
+- Detailed logging enabled
+- Encryption disabled
+
+### PRODUCTION
+- Optimized TTLs (1 hour default, 7 days for creds/keys)
+- Aggressive timeouts (5s)
+- Encryption mandatory (AES-256-GCM)
+- Minimal logging
+
+### TESTING
+- Very short TTLs (30s) for quick tests
+- Fast timeouts (2s)
+- Encryption disabled
+- Metrics disabled
+
+```typescript
+import { createHybridConfigFromPreset } from '@luoarch/baileys-store-core';
+
+// Use PRODUCTION preset
+const config = createHybridConfigFromPreset('PRODUCTION', {
+  mongoUrl: process.env.MONGO_URL!,
+  mongoDatabase: 'whatsapp',
+  mongoCollection: 'sessions',
+  masterKey: process.env.BAILEYS_MASTER_KEY!,
+});
+```
 
 ## Troubleshooting
 
