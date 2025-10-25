@@ -1,1 +1,1 @@
-npx --no -- commitlint --edit $1
+/Users/luoarch/.nvm/versions/node/v22.19.0/bin/node /Users/luoarch/.nvm/versions/node/v22.19.0/bin/npx --no -- commitlint --edit $1
