@@ -43,6 +43,19 @@ export {
 
 export type { QueueAdapter, JobOptions, PersistJob } from './types/queue.js';
 
+// ========== Configuration Presets ==========
+export {
+  DEVELOPMENT,
+  PRODUCTION,
+  TESTING,
+  PRESETS,
+  createHybridConfigFromPreset,
+  getPreset,
+  validatePreset,
+} from './config/presets.js';
+
+export type { ConfigPreset, PresetName } from './config/presets.js';
+
 // Nota: Configs específicos são exportados pelos respectivos módulos
 // RedisStoreConfig → @baileys-store/core/redis
 // MongoStoreConfig → @baileys-store/core/mongodb

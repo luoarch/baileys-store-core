@@ -109,6 +109,8 @@
     "test:ui": "vitest --ui",
     "test:integration": "vitest run --config vitest.integration.config.ts",
     "test:e2e": "vitest run --config vitest.e2e.config.ts",
+    "test:mutation": "stryker run",
+    "test:quality": "yarn test:coverage && yarn test:mutation",
     "test:redis": "yarn build && tsx test-scripts/test-redis-detailed.ts",
     "test:mongodb": "yarn build && tsx test-scripts/test-mongodb-detailed.ts",
     "test:hybrid": "yarn build && tsx test-scripts/test-hybrid-detailed.ts",
@@ -122,6 +124,9 @@
     "format:check": "prettier --check .",
     "typecheck": "tsc --noEmit",
     "clean": "rm -rf dist",
+    "changelog": "conventional-changelog -p angular -i CHANGELOG.md -s",
+    "presets:validate": "tsx scripts/validate-presets.ts",
+    "coverage:check": "node scripts/check-coverage.js",
     "prepublishOnly": "yarn clean && yarn build && yarn test && yarn lint && npm pack --dry-run",
     "prepare": "husky"
   },
