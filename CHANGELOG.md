@@ -7,6 +7,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.0-rc.2] - 2025-01-25
+
+### 🔧 Fixes
+
+#### Packaging Improvements
+
+- **Fixed Husky execution on install**: Script `prepare` now checks for `.git` directory before running Husky, preventing execution when the package is installed from npm
+- **Updated Husky hooks**: Removed deprecated `#!/usr/bin/env sh` and `. "$(dirname -- "$0")/_/husky.sh"` lines from pre-commit and commit-msg hooks
+- **Updated prepare script**: Fixed to work with Husky v9 by using `npx husky` instead of deprecated `.install()` method
+- **Removed auto-dependency**: Cleaned up self-reference in dependencies that could cause installation loops
+- **Removed duplicate dependencies**: Eliminated duplicate `@hapi/boom` entry in devDependencies
+
+#### Code Quality
+
+- **Better error messages**: Improved error handling in prepare script
+- **Cleaner dependencies**: Removed unnecessary packages (`install`, `npm`) from dependencies
+
+### 📦 Installation
+
+```bash
+npm install @luoarch/baileys-store-core@1.0.0-rc.2
+# or
+yarn add @luoarch/baileys-store-core@1.0.0-rc.2
+```
+
+**Breaking Changes:** None
+
+**Migration from 1.0.0-rc.1:** Automatic - no code changes required
+
 ## [1.0.0-rc.1] - 2025-01-25
 
 ### 🎉 First Release Candidate
