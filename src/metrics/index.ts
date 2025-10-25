@@ -127,6 +127,89 @@ export const operationLatencyHistogram = new Histogram({
 });
 
 /**
+ * Batch operations counter
+ */
+export const batchOperationsCounter = new Counter({
+  name: 'baileys_store_batch_operations_total',
+  help: 'Total number of batch operations',
+  labelNames: ['type', 'result'],
+  registers: [metricsRegistry],
+});
+
+/**
+ * Batch operations duration histogram
+ */
+export const batchOperationsDurationHistogram = new Histogram({
+  name: 'baileys_store_batch_operations_duration_seconds',
+  help: 'Duration of batch operations',
+  labelNames: ['type', 'result'],
+  buckets: [0.01, 0.05, 0.1, 0.5, 1, 2, 5],
+  registers: [metricsRegistry],
+});
+
+/**
+ * Version conflict counter
+ */
+export const versionConflictCounter = new Counter({
+  name: 'baileys_store_version_conflicts_total',
+  help: 'Total number of version conflicts (optimistic locking failures)',
+  labelNames: ['layer', 'session_id'],
+  registers: [metricsRegistry],
+});
+
+/**
+ * Cache warming counter
+ */
+export const cacheWarmingCounter = new Counter({
+  name: 'baileys_store_cache_warming_total',
+  help: 'Total number of cache warming operations',
+  labelNames: ['result'],
+  registers: [metricsRegistry],
+});
+
+/**
+ * Circuit breaker transitions gauge
+ * Track state transitions: 0=closed, 1=half-open, 2=open
+ */
+export const circuitBreakerStateGauge = new Counter({
+  name: 'baileys_store_circuit_breaker_state_transitions_total',
+  help: 'Total number of circuit breaker state transitions',
+  labelNames: ['from_state', 'to_state'],
+  registers: [metricsRegistry],
+});
+
+/**
+ * Outbox queue size gauge
+ */
+export const outboxQueueSizeGauge = new Counter({
+  name: 'baileys_store_outbox_queue_size_total',
+  help: 'Total number of items added to outbox queue',
+  labelNames: [],
+  registers: [metricsRegistry],
+});
+
+/**
+ * Outbox reconciliation latency histogram (detailed)
+ */
+export const outboxReconciliationLatencyHistogram = new Histogram({
+  name: 'baileys_store_outbox_reconciliation_latency_seconds',
+  help: 'Latency of individual outbox reconciliation operations',
+  labelNames: ['status'],
+  buckets: [0.001, 0.005, 0.01, 0.05, 0.1, 0.5, 1, 2],
+  registers: [metricsRegistry],
+});
+
+/**
+ * Operation timeout counter
+ */
+export const operationTimeoutCounter = new Counter({
+  name: 'baileys_store_operation_timeouts_total',
+  help: 'Total number of operation timeouts',
+  labelNames: ['operation', 'layer'],
+  registers: [metricsRegistry],
+});
+
+/**
  * Helper to get metrics in text format for Prometheus scraping
  */
 export async function getMetricsText(): Promise<string> {

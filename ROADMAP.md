@@ -964,20 +964,26 @@ const config = {
 ### 4.3 Observability Enhancements 🟡 ⭐⭐
 
 **Complexidade:** Médio (3 dias)  
-**Impacto:** Médio - Melhora debugging e monitoramento
+**Impacto:** Médio - Melhora debugging e monitoramento  
+**Status:** ✅ **Concluído**
+
+**Arquivos modificados:**
+- ✅ `src/metrics/index.ts` - Adicionar novas métricas
 
 **Arquivos a modificar:**
-- `src/metrics/index.ts` - Adicionar novas métricas
-- `src/hybrid/store.ts` - Instrumentar operações adicionais
+- [ ] `src/hybrid/store.ts` - Instrumentar operações adicionais
 
 **Checklist:**
-- [ ] Adicionar métricas de batch operations:
-  - `batch_operations_total{type, result}`
-  - `batch_operations_duration_seconds{type}`
-- [ ] Adicionar gauge de circuit breaker state transitions
-- [ ] Adicionar histogram de outbox reconciliation timing
-- [ ] Adicionar counter de version conflicts
-- [ ] Melhorar logging de operações críticas com contexto
+- ✅ Adicionar métricas de batch operations:
+  - ✅ `batch_operations_total{type, result}`
+  - ✅ `batch_operations_duration_seconds{type}`
+- ✅ Adicionar gauge de circuit breaker state transitions (`circuit_breaker_state_transitions_total`)
+- ✅ Adicionar histogram de outbox reconciliation timing (`outbox_reconciliation_latency_seconds`)
+- ✅ Adicionar counter de version conflicts (`version_conflicts_total`)
+- ✅ Adicionar counter de cache warming (`cache_warming_total`)
+- ✅ Adicionar gauge de outbox queue size (`outbox_queue_size_total`)
+- ✅ Adicionar counter de operation timeouts (`operation_timeouts_total`)
+- [ ] Melhorar logging de operações críticas com contexto (pendente)
 
 ### 4.4 Correlation ID Enhancements 🟢 ⭐⭐
 
@@ -1105,8 +1111,8 @@ const config = {
 
 **Progresso da Fase 4:**
 - ✅ 4.2 Enhanced Health Checks (100% concluído)
+- ✅ 4.3 Observability Enhancements (100% concluído)
 - ⏳ 4.1 Batch Operations (pendente)
-- ⏳ 4.3 Observability Enhancements (pendente)
 - ⏳ 4.4 Correlation ID Enhancements (pendente)
 - ⏳ 4.5 Benchmarks e Performance Tests (pendente)
 
