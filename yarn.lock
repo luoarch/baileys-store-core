@@ -1582,13 +1582,13 @@
   resolved "https://registry.npmjs.org/@standard-schema/spec/-/spec-1.0.0.tgz#f193b73dc316c4170f2e82a881da0f550d551b9c"
   integrity sha512-m2bOd0f2RT9k8QJx1JN85cZYyH1RqFBdlwtkSlf4tBDYLCiiZnv1fIIwacK6cqwXavOydf0NPToMQgpKq+dVlA==
 
-"@testcontainers/mongodb@^11.7.1":
-  version "11.7.1"
-  resolved "https://registry.npmjs.org/@testcontainers/mongodb/-/mongodb-11.7.1.tgz#8320e68e343c79fada5289c3fc417cfe260c9744"
-  integrity sha512-WVXbFqKyWreXYGjpRgbCwnRHv5KQXFX5nUd8xy5oHE6UJhSKI0uZeWKAZRebzSP19dsNVPKEbLgNL0Iz3k5xRg==
+"@testcontainers/mongodb@^11.7.2":
+  version "11.7.2"
+  resolved "https://registry.yarnpkg.com/@testcontainers/mongodb/-/mongodb-11.7.2.tgz#31ac20a556c64c172a195b300f4a8d8bf21dcea4"
+  integrity sha512-2buyueceXccHNr4M7r7Y5VvR4pMME9dj0MncarGZv9yeLaWMTC0/J/1Wd8otP51I8O+3EBLZqbs0KSkLCr66rg==
   dependencies:
     compare-versions "^6.1.1"
-    testcontainers "^11.7.1"
+    testcontainers "^11.7.2"
 
 "@testcontainers/redis@^11.7.2":
   version "11.7.2"
@@ -6950,7 +6950,7 @@ tempy@^3.0.0:
     type-fest "^2.12.2"
     unique-string "^3.0.0"
 
-testcontainers@^11.7.1, testcontainers@^11.7.2:
+testcontainers@^11.7.2:
   version "11.7.2"
   resolved "https://registry.yarnpkg.com/testcontainers/-/testcontainers-11.7.2.tgz#4b3b0c4ebaf0dcb7a53312314107d623fc0c97ca"
   integrity sha512-jeFzeyzLhIouRAbLnQNapJ2esBs/mvXkkYvO1/vSZehT3/7+Q557qaNxwKwMqAbfxfSh7gcx1OLlMsQUZ9JLdA==
