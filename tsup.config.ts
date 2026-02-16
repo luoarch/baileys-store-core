@@ -34,6 +34,7 @@ export default defineConfig({
     'mongodb',
     'tweetnacl',
     '@napi-rs/snappy',
+    'snappy',
     'prom-client',
     'zod',
   ],

@@ -208,16 +208,29 @@ export class CodecService {
 
   /**
    * Replacer para JSON.stringify que ordena chaves
+   * Handles edge cases: Buffer, Uint8Array, Date, and protobuf messages
    */
   private stableReplacer = (_key: string, value: unknown): unknown => {
     // Preservar tipos especiais (BufferJSON do Baileys)
     if (value && typeof value === 'object') {
+      // Handle Buffer instances
       if (Buffer.isBuffer(value)) {
         return BufferJSON.replacer(null as unknown as string, value);
       }
 
-      // Ordenar chaves de objetos
-      if (!Array.isArray(value)) {
+      // Handle Uint8Array (convert to Buffer format for consistency)
+      if (value instanceof Uint8Array) {
+        return { type: 'Buffer', data: Array.from(value) };
+      }
+
+      // Handle Date objects - serialize as ISO string
+      if (value instanceof Date) {
+        return value.toISOString();
+      }
+
+      // Only sort keys for plain objects (allow proto messages to use toJSON)
+      // This prevents breaking protobuf serialization which relies on specific methods
+      if (!Array.isArray(value) && Object.getPrototypeOf(value) === Object.prototype) {
         const sorted: Record<string, unknown> = {};
         const keys = Object.keys(value).sort();
         for (const k of keys) {
