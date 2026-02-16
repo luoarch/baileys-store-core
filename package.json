@@ -1,6 +1,6 @@
 {
   "name": "@luoarch/baileys-store-core",
-  "version": "1.0.0-rc.4",
+  "version": "1.0.0-rc.5",
   "description": "Universal authentication state management for Baileys v7.0+ with Redis, MongoDB, and hybrid storage support",
   "type": "module",
   "sideEffects": false,
@@ -165,6 +165,12 @@
     "hybrid-storage",
     "whatsapp-web",
     "signal-protocol",
+    "rate-limiting",
+    "ban-prevention",
+    "session-monitoring",
+    "lid-mapping",
+    "connection-health",
+    "diagnostics",
     "release-candidate"
   ],
   "author": {

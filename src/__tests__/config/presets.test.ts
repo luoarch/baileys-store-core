@@ -12,6 +12,7 @@ import {
   validatePreset,
   getPreset,
   PRESETS,
+  createHybridConfigFromPreset,
 } from '../../config/presets.js';
 
 describe('Config Presets', () => {
@@ -209,6 +210,99 @@ describe('Config Presets', () => {
       expect(errors).not.toContain(
         'keyRotationDays must be at least 1 day when encryption is enabled',
       );
+    });
+
+    it('should reject credsTtl less than 1', () => {
+      const invalidPreset = {
+        ...DEVELOPMENT,
+        ttl: {
+          ...DEVELOPMENT.ttl,
+          credsTtl: 0,
+        },
+      };
+      const errors = validatePreset(invalidPreset);
+      expect(errors).toContain('credsTtl must be at least 1 second');
+    });
+
+    it('should reject keysTtl less than 1', () => {
+      const invalidPreset = {
+        ...DEVELOPMENT,
+        ttl: {
+          ...DEVELOPMENT.ttl,
+          keysTtl: 0,
+        },
+      };
+      const errors = validatePreset(invalidPreset);
+      expect(errors).toContain('keysTtl must be at least 1 second');
+    });
+
+    it('should reject lockTtl less than 1', () => {
+      const invalidPreset = {
+        ...DEVELOPMENT,
+        ttl: {
+          ...DEVELOPMENT.ttl,
+          lockTtl: 0,
+        },
+      };
+      const errors = validatePreset(invalidPreset);
+      expect(errors).toContain('lockTtl must be at least 1 second');
+    });
+  });
+
+  describe('createHybridConfigFromPreset', () => {
+    it('should create config from PRODUCTION preset', () => {
+      const config = createHybridConfigFromPreset('PRODUCTION', {
+        mongoUrl: 'mongodb://localhost:27017',
+        mongoDatabase: 'test_db',
+        mongoCollection: 'sessions',
+        redisUrl: 'redis://localhost:6379',
+        masterKey: 'test-master-key',
+      });
+
+      expect(config.mongoUrl).toBe('mongodb://localhost:27017');
+      expect(config.mongoDatabase).toBe('test_db');
+      expect(config.mongoCollection).toBe('sessions');
+      expect(config.redisUrl).toBe('redis://localhost:6379');
+      expect(config.masterKey).toBe('test-master-key');
+      expect(config.ttl).toEqual(PRODUCTION.ttl);
+      expect(config.resilience).toEqual(PRODUCTION.resilience);
+      expect(config.security).toEqual(PRODUCTION.security);
+      expect(config.observability).toEqual(PRODUCTION.observability);
+    });
+
+    it('should use default values when overrides are empty', () => {
+      const config = createHybridConfigFromPreset('DEVELOPMENT', {});
+
+      expect(config.mongoUrl).toBe('');
+      expect(config.mongoDatabase).toBe('baileys_store');
+      expect(config.mongoCollection).toBe('sessions');
+      expect(config.redisUrl).toBeUndefined();
+      expect(config.masterKey).toBeUndefined();
+    });
+
+    it('should set default writeBehind settings', () => {
+      const config = createHybridConfigFromPreset('TESTING', {});
+
+      expect(config.enableWriteBehind).toBe(false);
+      expect(config.writeBehindFlushInterval).toBe(1000);
+      expect(config.writeBehindQueueSize).toBe(1000);
+    });
+
+    it('should create config from each preset type', () => {
+      const presetNames: ('DEVELOPMENT' | 'PRODUCTION' | 'TESTING')[] = [
+        'DEVELOPMENT',
+        'PRODUCTION',
+        'TESTING',
+      ];
+
+      for (const presetName of presetNames) {
+        const config = createHybridConfigFromPreset(presetName, {
+          mongoUrl: 'mongodb://test',
+        });
+
+        expect(config.ttl).toEqual(PRESETS[presetName].ttl);
+        expect(config.resilience).toEqual(PRESETS[presetName].resilience);
+      }
     });
   });
 });

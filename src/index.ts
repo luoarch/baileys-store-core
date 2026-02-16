@@ -55,7 +55,12 @@ export {
   getPreset,
 } from './config/presets.js';
 
-export type { ConfigPreset, PresetName } from './config/presets.js';
+export type {
+  ConfigPreset,
+  PresetName,
+  RateLimitConfig,
+  MonitoringConfig,
+} from './config/presets.js';
 
 // ========== Validation ==========
 export {
@@ -130,6 +135,19 @@ export {
   outboxQueueSizeGauge,
   outboxReconciliationLatencyHistogram,
   operationTimeoutCounter,
+  rateLimitWaitCounter,
+  rateLimitTokensGauge,
+  rotationAnomalyCounter,
+  rotationRateGauge,
+  connectionStateGauge,
+  connectionSilenceGauge,
+  reconnectionAttemptsCounter,
+  reconnectionSuccessCounter,
+  lidMappingCacheHitsCounter,
+  lidMappingCacheMissesCounter,
+  lidMappingsStoredCounter,
+  diagnosticChecksCounter,
+  diagnosticRecommendationsGauge,
   getMetricsText,
   resetMetrics,
 } from './metrics/index.js';
@@ -166,3 +184,47 @@ export {
   getRetryDelay,
 } from './errors/hierarchy.js';
 export type { ErrorMetadata } from './errors/hierarchy.js';
+
+// ========== Rate Limiting (v1.1.0) ==========
+export {
+  TokenBucket,
+  SessionRateLimiter,
+  DEFAULT_RATE_LIMITER_CONFIG,
+} from './rate-limit/index.js';
+export type {
+  TokenBucketConfig,
+  TokenBucketState,
+  RateLimiterConfig,
+  RateLimitStatus,
+  SessionMetadata,
+} from './rate-limit/index.js';
+
+// ========== Monitoring (v1.1.0) ==========
+export {
+  RotationMonitor,
+  ConnectionHealthTracker,
+  DEFAULT_ROTATION_MONITOR_CONFIG,
+  DEFAULT_CONNECTION_TRACKER_CONFIG,
+} from './monitoring/index.js';
+export type {
+  RotationMonitorConfig,
+  RotationStatus,
+  RotationStats,
+  ConnectionState,
+  ConnectionTrackerConfig,
+  ConnectionHealth,
+  SessionConnectionData,
+} from './monitoring/index.js';
+
+// ========== Identity (v1.1.0) ==========
+export { LIDMappingCache, DEFAULT_LID_CACHE_CONFIG } from './identity/index.js';
+export type { LIDMapping, LIDCacheConfig, LIDCacheStats } from './identity/index.js';
+
+// ========== Diagnostics (v1.1.0) ==========
+export { DiagnosticEngine, DEFAULT_DIAGNOSTIC_ENGINE_CONFIG } from './diagnostics/index.js';
+export type {
+  DiagnosticStatus,
+  CheckResult,
+  DiagnosticReport,
+  DiagnosticEngineConfig,
+} from './diagnostics/index.js';

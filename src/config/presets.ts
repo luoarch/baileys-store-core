@@ -14,6 +14,41 @@ import type {
 import type { HybridStoreConfig } from '../types/config.js';
 
 /**
+ * Rate limiting configuration for WhatsApp ban prevention.
+ *
+ * @see https://www.a2c.chat/en/whatsapp-risk-control-mechanism
+ * @since 1.1.0
+ */
+export interface RateLimitConfig {
+  /** Maximum messages per minute (default: 12, validated threshold) */
+  maxMessagesPerMinute: number;
+  /** Multiplier for cold contacts (default: 0.33 = 4 msg/min) */
+  coldContactMultiplier: number;
+  /** Random delay range in ms to appear human-like [min, max] */
+  jitterRangeMs: [number, number];
+  /** Warmup period for new numbers (days) */
+  warmupPeriodDays: number;
+  /** Whether rate limiting is enabled */
+  enabled: boolean;
+}
+
+/**
+ * Monitoring configuration for session health tracking.
+ *
+ * @since 1.1.0
+ */
+export interface MonitoringConfig {
+  /** Session rotation threshold per minute before anomaly detection */
+  rotationThresholdPerMinute: number;
+  /** Silence threshold before considering connection degraded (ms) */
+  silenceThresholdMs: number;
+  /** Silence threshold before considering connection disconnected (ms) */
+  disconnectThresholdMs: number;
+  /** Whether monitoring is enabled */
+  enabled: boolean;
+}
+
+/**
  * Configuration Preset
  * Represents a complete configuration optimized for a specific environment
  */
@@ -22,6 +57,8 @@ export interface ConfigPreset {
   resilience: ResilienceConfig;
   security: SecurityConfig;
   observability: ObservabilityConfig;
+  rateLimit?: RateLimitConfig;
+  monitoring?: MonitoringConfig;
 }
 
 /**
@@ -62,6 +99,19 @@ export const DEVELOPMENT: ConfigPreset = {
     enableTracing: false, // Tracing overhead not needed
     enableDetailedLogs: true, // Detailed logs for debugging
     metricsInterval: 60000, // 1 minute
+  },
+  rateLimit: {
+    enabled: false, // Disabled for easier debugging
+    maxMessagesPerMinute: 60, // High limit for development
+    coldContactMultiplier: 1, // No reduction
+    jitterRangeMs: [0, 0], // No jitter
+    warmupPeriodDays: 0, // No warmup
+  },
+  monitoring: {
+    enabled: true, // Helpful for development
+    rotationThresholdPerMinute: 100, // High threshold for development
+    silenceThresholdMs: 60000, // 1 minute
+    disconnectThresholdMs: 120000, // 2 minutes
   },
 };
 
@@ -104,6 +154,19 @@ export const PRODUCTION: ConfigPreset = {
     enableDetailedLogs: false, // Reduced logging to minimize I/O
     metricsInterval: 60000, // 1 minute
   },
+  rateLimit: {
+    enabled: true, // Critical for production
+    maxMessagesPerMinute: 12, // Validated by multiple sources
+    coldContactMultiplier: 0.33, // 4 msg/min for cold contacts
+    jitterRangeMs: [500, 1500], // Human-like delays
+    warmupPeriodDays: 10, // 10 day warmup for new numbers
+  },
+  monitoring: {
+    enabled: true, // Essential for production
+    rotationThresholdPerMinute: 10, // Validated from GitHub #2340
+    silenceThresholdMs: 300000, // 5 minutes
+    disconnectThresholdMs: 600000, // 10 minutes
+  },
 };
 
 /**
@@ -144,6 +207,19 @@ export const TESTING: ConfigPreset = {
     enableTracing: false, // No tracing in tests
     enableDetailedLogs: false, // Quiet tests
     metricsInterval: 5000, // 5s (if metrics enabled)
+  },
+  rateLimit: {
+    enabled: false, // Disabled for test speed
+    maxMessagesPerMinute: 1000, // Very high limit
+    coldContactMultiplier: 1, // No reduction
+    jitterRangeMs: [0, 0], // No jitter
+    warmupPeriodDays: 0, // No warmup
+  },
+  monitoring: {
+    enabled: false, // Disabled for test speed
+    rotationThresholdPerMinute: 1000, // Very high threshold
+    silenceThresholdMs: 1000, // 1 second
+    disconnectThresholdMs: 2000, // 2 seconds
   },
 };
 
