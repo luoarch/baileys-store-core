@@ -2,8 +2,9 @@ cff-version: 1.2.0
 message: 'If you use this software, please cite it as below.'
 type: software
 title: '@luoarch/baileys-store-core: Production-Grade Authentication State Management for Baileys v7.0+'
-version: 1.0.0-rc.1
-date-released: 2025-10-23
+version: 1.0.0-rc.4
+doi: 10.5281/zenodo.18659706
+date-released: 2026-02-16
 authors:
   - family-names: 'Moraes'
     given-names: 'Lucas'

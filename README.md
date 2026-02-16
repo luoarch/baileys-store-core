@@ -12,7 +12,7 @@ Production-grade authentication state management for Baileys v7.0+ with Redis, M
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.9-blue.svg)](https://www.typescriptlang.org/)
 [![Node](https://img.shields.io/badge/node-%3E%3D20.0.0-brightgreen.svg)](https://nodejs.org/)
-[![DOI](https://img.shields.io/badge/DOI-Pending-orange.svg)]()
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.18659706.svg)](https://doi.org/10.5281/zenodo.18659706)
 
 ## Features
 

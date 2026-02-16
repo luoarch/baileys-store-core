@@ -494,9 +494,9 @@ export type TypedAuthenticationCreds = Omit<
 
 `@baileys-store/core` provides a robust, production-grade solution for WhatsApp authentication state management using Baileys v7.0+. Through careful engineering of concurrency control, fault tolerance, and observability, we achieved enterprise-level reliability while maintaining simplicity for developers. The library is fully open-source (MIT), well-documented, and validated with real WhatsApp connections.
 
-**Availability:** https://www.npmjs.com/package/@baileys-store/core  
-**Source Code:** https://github.com/luoarch/baileys-store-core  
-**DOI:** [Pending Zenodo registration]
+**Availability:** https://www.npmjs.com/package/@luoarch/baileys-store-core
+**Source Code:** https://github.com/luoarch/baileys-store-core
+**DOI:** [10.5281/zenodo.18659706](https://doi.org/10.5281/zenodo.18659706)
 
 ---
 
@@ -615,8 +615,8 @@ If you use this library in academic work, please cite:
   publisher = {GitHub},
   journal = {GitHub repository},
   howpublished = {\url{https://github.com/[username]/baileys-store}},
-  version = {1.0.0},
-  doi = {[Pending]}
+  version = {1.0.0-rc.4},
+  doi = {10.5281/zenodo.18659706}
 }
 ```
 
