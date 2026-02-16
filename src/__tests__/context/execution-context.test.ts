@@ -1,6 +1,6 @@
 /**
  * Execution Context Tests
- * 
+ *
  * Tests for context propagation using AsyncLocalStorage
  */
 
@@ -79,7 +79,7 @@ describe('Execution Context', () => {
 
     it('should propagate context across async operations', async () => {
       withContext({ correlationId: 'async-123' }, async () => {
-        await new Promise(resolve => setTimeout(resolve, 10));
+        await new Promise((resolve) => setTimeout(resolve, 10));
         const context = getContext();
         expect(context?.correlationId).toBe('async-123');
       });
@@ -141,7 +141,7 @@ describe('Execution Context', () => {
 
     it('should propagate across async boundaries', async () => {
       await withCorrelationId('async-corr-123', async () => {
-        await new Promise(resolve => setTimeout(resolve, 10));
+        await new Promise((resolve) => setTimeout(resolve, 10));
         const context = getContext();
         expect(context?.correlationId).toBe('async-corr-123');
       });
@@ -179,7 +179,7 @@ describe('Execution Context', () => {
 
     it('should return duration in milliseconds', async () => {
       withContext({ startTime: Date.now() }, async () => {
-        await new Promise(resolve => setTimeout(resolve, 50));
+        await new Promise((resolve) => setTimeout(resolve, 50));
         const duration = getOperationDuration();
         expect(duration).toBeDefined();
         expect(duration).toBeGreaterThanOrEqual(50);
@@ -297,9 +297,9 @@ describe('Execution Context', () => {
     it('should maintain context across Promise chain', async () => {
       withCorrelationId('promise-chain-123', async () => {
         const result = await Promise.resolve(1)
-          .then(value => value + 1)
-          .then(value => value * 2);
-        
+          .then((value) => value + 1)
+          .then((value) => value * 2);
+
         expect(result).toBe(4);
         expect(getCorrelationId()).toBe('promise-chain-123');
       });
@@ -309,10 +309,10 @@ describe('Execution Context', () => {
       withCorrelationId('async-await-123', async () => {
         const step1 = await Promise.resolve('step1');
         expect(getCorrelationId()).toBe('async-await-123');
-        
+
         const step2 = await Promise.resolve('step2');
         expect(getCorrelationId()).toBe('async-await-123');
-        
+
         return step1 + step2;
       });
     });
@@ -320,11 +320,11 @@ describe('Execution Context', () => {
     it('should isolate context in parallel operations', async () => {
       const results = await Promise.all([
         withCorrelationId('parallel-1', async () => {
-          await new Promise(resolve => setTimeout(resolve, 10));
+          await new Promise((resolve) => setTimeout(resolve, 10));
           return getCorrelationId();
         }),
         withCorrelationId('parallel-2', async () => {
-          await new Promise(resolve => setTimeout(resolve, 10));
+          await new Promise((resolve) => setTimeout(resolve, 10));
           return getCorrelationId();
         }),
       ]);
@@ -335,9 +335,9 @@ describe('Execution Context', () => {
     it('should handle metadata propagation across async operations', async () => {
       withContext({ correlationId: 'meta-test' }, () => {
         setContextMetadata({ userId: 'user-123' });
-        
+
         (async () => {
-          await new Promise(resolve => setTimeout(resolve, 10));
+          await new Promise((resolve) => setTimeout(resolve, 10));
           expect(getContextMetadata('userId')).toBe('user-123');
         })();
       });

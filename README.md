@@ -1,6 +1,6 @@
 # @luoarch/baileys-store-core
 
-> ⚠️ **Release Candidate**: Currently at v1.0.0-rc.3. Stable v1.0.0 coming soon!  
+> ⚠️ **Release Candidate**: Currently at v1.0.0-rc.4. Stable v1.0.0 coming soon!  
 > 💬 **Feedback Welcome**: [GitHub Discussions](https://github.com/luoarch/baileys-store-core/discussions)
 
 Production-grade authentication state management for Baileys v7.0+ with Redis, MongoDB, and hybrid storage
@@ -24,7 +24,7 @@ Production-grade authentication state management for Baileys v7.0+ with Redis, M
 - ⚡ **High Performance** - < 5ms read latency (Redis), async MongoDB writes
 - 🛡️ **Fault Tolerant** - Graceful degradation, partial failure compensation
 - 📦 **Tree-Shakeable** - Granular exports, only import what you need
-- 🧪 **Well-Tested** - 52 tests (unit + integration + E2E)
+- 🧪 **Well-Tested** - 652 tests (unit + integration + E2E)
 - ⚙️ **Config Presets** - Development, Production, and Testing configurations out of the box
 - 📚 **Well-Documented** - ADRs, SLA, Research documentation
 
@@ -34,10 +34,10 @@ Production-grade authentication state management for Baileys v7.0+ with Redis, M
 
 ```bash
 # Install both packages (required)
-npm install @whiskeysockets/baileys@latest @luoarch/baileys-store-core@1.0.0-rc.3
+npm install @whiskeysockets/baileys@latest @luoarch/baileys-store-core@1.0.0-rc.4
 
 # Or with Yarn
-yarn add @whiskeysockets/baileys@latest @luoarch/baileys-store-core@1.0.0-rc.3
+yarn add @whiskeysockets/baileys@latest @luoarch/baileys-store-core@1.0.0-rc.4
 ```
 
 ### Stable Version (Coming Soon)
@@ -333,7 +333,7 @@ Add to your workspace `package.json`:
 {
   "workspaces": ["packages/*"],
   "resolutions": {
-    "@luoarch/baileys-store-core": "1.0.0-rc.1"
+    "@luoarch/baileys-store-core": "1.0.0-rc.4"
   }
 }
 ```
@@ -432,7 +432,7 @@ For academic use, see [CITATION.cff](./CITATION.cff) or cite as:
   title = {@luoarch/baileys-store-core},
   year = {2025},
   url = {https://github.com/luoarch/baileys-store-core},
-  version = {1.0.0-rc.3}
+  version = {1.0.0-rc.4}
 }
 ```
 

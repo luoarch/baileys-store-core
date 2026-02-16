@@ -3,7 +3,7 @@
  *
  * Mutation testing configuration for @luoarch/baileys-store-core
  * Target: 70%+ mutation score (focando em módulos críticos)
- * 
+ *
  * @type {import('@stryker-mutator/core').PartialStrykerOptions}
  */
 export default {
@@ -16,7 +16,7 @@ export default {
    * Test runner configuration
    */
   testRunner: 'vitest',
-  
+
   /**
    * Vitest runner options
    */
@@ -35,13 +35,13 @@ export default {
     'src/redis/use-redis-auth-state.ts',
     'src/hybrid/use-hybrid-auth-state.ts',
     'src/hybrid/store.ts',
-    
+
     // Excluir testes e arquivos de baixa cobertura
     '!src/**/*.test.ts',
     '!src/**/*.spec.ts',
     '!src/**/*.e2e.test.ts',
     '!src/__tests__/**',
-    
+
     // Excluir módulos utilitários com baixa cobertura
     '!src/errors/hierarchy.ts',
     '!src/health/health-check.ts',
@@ -59,11 +59,11 @@ export default {
    * Reporter configuration
    */
   reporters: ['progress', 'clear-text', 'html', 'json'],
-  
+
   htmlReporter: {
     fileName: 'reports/mutation/index.html',
   },
-  
+
   jsonReporter: {
     fileName: 'reports/mutation/report.json',
   },
@@ -74,7 +74,7 @@ export default {
    */
   thresholds: {
     high: 70, // Warning se score < 70%
-    low: 50,  // Fail se score < 50%
+    low: 50, // Fail se score < 50%
     break: 40, // Build falha se score < 40%
   },
 
@@ -84,8 +84,8 @@ export default {
    */
   mutator: {
     excludedMutations: [
-      'StringLiteral',      // Logs/mensagens não afetam lógica
-      'BlockStatement',     // Remove blocos (muito invasivo)
+      'StringLiteral', // Logs/mensagens não afetam lógica
+      'BlockStatement', // Remove blocos (muito invasivo)
     ],
   },
 

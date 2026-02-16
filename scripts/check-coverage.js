@@ -8,7 +8,7 @@
  * - Branches: >= 65%
  * - Functions: >= 75%
  * - Statements: >= 75%
- * 
+ *
  * Roadmap incremental:
  * - v1.0.0-rc.1: 75% lines, 65% branches (mínimo viável)
  * - v1.0.0-rc.2: 78% lines, 70% branches (melhoria)
@@ -24,8 +24,8 @@ const __dirname = dirname(__filename);
 
 // Thresholds RC1 - incremental para produção
 const THRESHOLDS = {
-  lines: 75,     // Industry standard para bibliotecas
-  branches: 65,  // Caminhos críticos cobertos
+  lines: 75, // Industry standard para bibliotecas
+  branches: 65, // Caminhos críticos cobertos
   functions: 75, // Funções principais testadas
   statements: 75, // Statements principais cobertos
 };
@@ -92,7 +92,9 @@ function printReport({ results, allPassed }) {
   console.log('├──────────────┼──────────┼──────────┤');
 
   for (const result of results) {
-    const icon = result.passed ? `${colors.green}✅${colors.reset}` : `${colors.red}❌${colors.reset}`;
+    const icon = result.passed
+      ? `${colors.green}✅${colors.reset}`
+      : `${colors.red}❌${colors.reset}`;
     const status = result.passed ? colors.green : colors.red;
     const reset = colors.reset;
 

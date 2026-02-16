@@ -26,21 +26,21 @@ interface Error {
 
 ## Tabela de Erros
 
-| Error Code | Domain | Severity | Retryable | HTTP | Descrição |
-|---|---|---|---|---|---|
-| `ERR_STORAGE_REDIS` | STORAGE | DEGRADED | ✅ | 503 | Redis indisponível |
-| `ERR_STORAGE_MONGO` | STORAGE | CRITICAL | ✅ | 503 | MongoDB indisponível |
-| `ERR_STORAGE_HYBRID` | STORAGE | DEGRADED | ✅ | 503 | Ambas as stores falharam |
-| `ERR_VERSION_MISMATCH` | STORAGE | CRITICAL | ❌ | 409 | Conflito de versão otimista |
-| `ERR_ENCRYPTION_FAILED` | ENCRYPTION | CRITICAL | ❌ | 500 | Falha na criptografia |
-| `ERR_DECRYPTION_FAILED` | ENCRYPTION | CRITICAL | ❌ | 500 | Falha na descriptografia |
-| `ERR_INVALID_KEY` | ENCRYPTION | CRITICAL | ❌ | 401 | Chave de criptografia inválida |
-| `ERR_KEY_ROTATION_REQUIRED` | ENCRYPTION | DEGRADED | ❌ | 403 | Rotação de chave necessária |
-| `ERR_INVALID_CONFIG` | VALIDATION | CRITICAL | ❌ | 400 | Configuração inválida |
-| `ERR_INVALID_SESSION_ID` | VALIDATION | RECOVERABLE | ❌ | 400 | ID de sessão inválido |
-| `ERR_TIMEOUT` | RESILIENCE | RECOVERABLE | ✅ | 408 | Timeout da operação |
-| `ERR_CIRCUIT_BREAKER_OPEN` | RESILIENCE | DEGRADED | ✅ | 503 | Circuit breaker aberto |
-| `ERR_MAX_RETRIES_EXCEEDED` | RESILIENCE | CRITICAL | ❌ | 503 | Máximo de retries excedido |
+| Error Code                  | Domain     | Severity    | Retryable | HTTP | Descrição                      |
+| --------------------------- | ---------- | ----------- | --------- | ---- | ------------------------------ |
+| `ERR_STORAGE_REDIS`         | STORAGE    | DEGRADED    | ✅        | 503  | Redis indisponível             |
+| `ERR_STORAGE_MONGO`         | STORAGE    | CRITICAL    | ✅        | 503  | MongoDB indisponível           |
+| `ERR_STORAGE_HYBRID`        | STORAGE    | DEGRADED    | ✅        | 503  | Ambas as stores falharam       |
+| `ERR_VERSION_MISMATCH`      | STORAGE    | CRITICAL    | ❌        | 409  | Conflito de versão otimista    |
+| `ERR_ENCRYPTION_FAILED`     | ENCRYPTION | CRITICAL    | ❌        | 500  | Falha na criptografia          |
+| `ERR_DECRYPTION_FAILED`     | ENCRYPTION | CRITICAL    | ❌        | 500  | Falha na descriptografia       |
+| `ERR_INVALID_KEY`           | ENCRYPTION | CRITICAL    | ❌        | 401  | Chave de criptografia inválida |
+| `ERR_KEY_ROTATION_REQUIRED` | ENCRYPTION | DEGRADED    | ❌        | 403  | Rotação de chave necessária    |
+| `ERR_INVALID_CONFIG`        | VALIDATION | CRITICAL    | ❌        | 400  | Configuração inválida          |
+| `ERR_INVALID_SESSION_ID`    | VALIDATION | RECOVERABLE | ❌        | 400  | ID de sessão inválido          |
+| `ERR_TIMEOUT`               | RESILIENCE | RECOVERABLE | ✅        | 408  | Timeout da operação            |
+| `ERR_CIRCUIT_BREAKER_OPEN`  | RESILIENCE | DEGRADED    | ✅        | 503  | Circuit breaker aberto         |
+| `ERR_MAX_RETRIES_EXCEEDED`  | RESILIENCE | CRITICAL    | ❌        | 503  | Máximo de retries excedido     |
 
 ---
 
@@ -53,6 +53,7 @@ interface Error {
 **Severidade:** DEGRADED (sistema funciona parcialmente)
 
 **Recuperação Recomendada:**
+
 ```typescript
 try {
   await store.get(sessionId);
@@ -78,6 +79,7 @@ try {
 **Severidade:** CRITICAL (falha total do componente)
 
 **Recuperação Recomendada:**
+
 ```typescript
 try {
   await store.set(sessionId, patch);
@@ -102,6 +104,7 @@ try {
 **Severidade:** DEGRADED
 
 **Recuperação Recomendada:**
+
 ```typescript
 try {
   await store.get(sessionId);
@@ -124,6 +127,7 @@ try {
 **Severidade:** CRITICAL
 
 **Recuperação Recomendada:**
+
 ```typescript
 let attempts = 0;
 while (attempts < 3) {
@@ -134,7 +138,7 @@ while (attempts < 3) {
   } catch (error) {
     if (error.metadata.code === 'ERR_VERSION_MISMATCH') {
       attempts++;
-      await new Promise(r => setTimeout(r, 100 * attempts));
+      await new Promise((r) => setTimeout(r, 100 * attempts));
     } else {
       throw error;
     }
@@ -155,6 +159,7 @@ while (attempts < 3) {
 **Severidade:** CRITICAL
 
 **Recuperação Recomendada:**
+
 ```typescript
 // Não há recovery automático para falhas de criptografia
 if (error.metadata.code === 'ERR_ENCRYPTION_FAILED') {
@@ -176,6 +181,7 @@ if (error.metadata.code === 'ERR_ENCRYPTION_FAILED') {
 **Severidade:** CRITICAL
 
 **Recuperação Recomendada:**
+
 ```typescript
 // Não há recovery automático
 if (error.metadata.code === 'ERR_DECRYPTION_FAILED') {
@@ -208,6 +214,7 @@ if (error.metadata.code === 'ERR_DECRYPTION_FAILED') {
 **Severidade:** DEGRADED
 
 **Recuperação Recomendada:**
+
 ```typescript
 if (error.metadata.code === 'ERR_KEY_ROTATION_REQUIRED') {
   // Trigger key rotation workflow
@@ -230,6 +237,7 @@ if (error.metadata.code === 'ERR_KEY_ROTATION_REQUIRED') {
 **Recuperação:** Nenhuma (configuração deve ser corrigida).
 
 **Exemplo:**
+
 ```typescript
 // Config inválido
 const config = {
@@ -267,18 +275,16 @@ if (!result.success) {
 **Severidade:** RECOVERABLE
 
 **Recuperação Recomendada:**
+
 ```typescript
-async function withRetry<T>(
-  fn: () => Promise<T>,
-  maxAttempts = 3
-): Promise<T> {
+async function withRetry<T>(fn: () => Promise<T>, maxAttempts = 3): Promise<T> {
   for (let i = 0; i < maxAttempts; i++) {
     try {
       return await fn();
     } catch (error) {
       if (error.metadata.code === 'ERR_TIMEOUT' && i < maxAttempts - 1) {
         const delay = getRetryDelay(error.metadata.code, i);
-        await new Promise(r => setTimeout(r, delay));
+        await new Promise((r) => setTimeout(r, delay));
         continue;
       }
       throw error;
@@ -299,6 +305,7 @@ async function withRetry<T>(
 **Severidade:** DEGRADED
 
 **Recuperação Recomendada:**
+
 ```typescript
 if (error.metadata.code === 'ERR_CIRCUIT_BREAKER_OPEN') {
   // Modo degradado: operar apenas com Redis
@@ -335,10 +342,7 @@ if (error.metadata.code === 'ERR_CIRCUIT_BREAKER_OPEN') {
 ```typescript
 import { getRetryDelay, isRetryable } from '@luoarch/baileys-store-core/errors';
 
-async function retryOperation<T>(
-  operation: () => Promise<T>,
-  maxAttempts = 3
-): Promise<T> {
+async function retryOperation<T>(operation: () => Promise<T>, maxAttempts = 3): Promise<T> {
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
     try {
       return await operation();
@@ -346,13 +350,13 @@ async function retryOperation<T>(
       if (!isRetryable(error.metadata.code)) {
         throw error; // Não retryable
       }
-      
+
       if (attempt === maxAttempts - 1) {
         throw error; // Última tentativa
       }
-      
+
       const delay = getRetryDelay(error.metadata.code, attempt);
-      await new Promise(r => setTimeout(r, delay));
+      await new Promise((r) => setTimeout(r, delay));
     }
   }
   throw new Error('Should not reach here');
@@ -383,6 +387,7 @@ rate(baileys_retries_success_total[5m]) / rate(baileys_retries_total[5m])
 ---
 
 **Referências:**
+
 - [Architecture Decision Records](../ARCHITECTURE.md)
 - [Circuit Breaker States](./diagrams/circuit-breaker.md)
 - [Data Consistency Model](./diagrams/data-consistency.md)

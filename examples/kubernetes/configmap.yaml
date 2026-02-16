@@ -4,9 +4,9 @@ metadata:
   name: baileys-config
   namespace: baileys
 data:
-  redis-url: "redis://redis-service:6379"
-  mongo-url: "mongodb://mongo-service:27017"
-  mongo-database: "whatsapp_prod"
-  mongo-collection: "sessions"
-  session-id: "production-session"
-  port: "3000"
+  redis-url: 'redis://redis-service:6379'
+  mongo-url: 'mongodb://mongo-service:27017'
+  mongo-database: 'whatsapp_prod'
+  mongo-collection: 'sessions'
+  session-id: 'production-session'
+  port: '3000'

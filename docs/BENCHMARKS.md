@@ -6,30 +6,30 @@ Este documento descreve os benchmarks de performance do `@baileys-store/core` e 
 
 ### Operações Individuais
 
-| Operação | Condição | Target p99 | Status |
-|---|---|---|---|
-| `get()` | Cache hit | < 20ms | ⏳ Pendente |
-| `get()` | Cache miss | < 100ms | ⏳ Pendente |
-| `set()` | Sync mode | < 30ms | ⏳ Pendente |
-| `set()` | Async mode (queue) | < 5ms | ⏳ Pendente |
-| `delete()` | - | < 25ms | ⏳ Pendente |
+| Operação   | Condição           | Target p99 | Status      |
+| ---------- | ------------------ | ---------- | ----------- |
+| `get()`    | Cache hit          | < 20ms     | ⏳ Pendente |
+| `get()`    | Cache miss         | < 100ms    | ⏳ Pendente |
+| `set()`    | Sync mode          | < 30ms     | ⏳ Pendente |
+| `set()`    | Async mode (queue) | < 5ms      | ⏳ Pendente |
+| `delete()` | -                  | < 25ms     | ⏳ Pendente |
 
 ### Operações em Lote
 
-| Operação | Batch Size | Target p99 | Status |
-|---|---|---|---|
-| `batchGet()` | 100 sessions | < 200ms | ⏳ Pendente |
-| `batchGet()` | 500 sessions | < 1000ms | ⏳ Pendente |
-| `batchGet()` | 1000 sessions | < 2000ms | ⏳ Pendente |
-| `batchDelete()` | 100 sessions | < 500ms | ⏳ Pendente |
+| Operação        | Batch Size    | Target p99 | Status      |
+| --------------- | ------------- | ---------- | ----------- |
+| `batchGet()`    | 100 sessions  | < 200ms    | ⏳ Pendente |
+| `batchGet()`    | 500 sessions  | < 1000ms   | ⏳ Pendente |
+| `batchGet()`    | 1000 sessions | < 2000ms   | ⏳ Pendente |
+| `batchDelete()` | 100 sessions  | < 500ms    | ⏳ Pendente |
 
 ### Circuit Breaker
 
-| Métrica | Target | Status |
-|---|---|---|
-| Circuit breaker open → half-open | < 30s | ✅ Implementado |
-| Circuit breaker half-open → closed | < 5s | ✅ Implementado |
-| Degraded mode latency impact | < 10% | ⏳ Pendente |
+| Métrica                            | Target | Status          |
+| ---------------------------------- | ------ | --------------- |
+| Circuit breaker open → half-open   | < 30s  | ✅ Implementado |
+| Circuit breaker half-open → closed | < 5s   | ✅ Implementado |
+| Degraded mode latency impact       | < 10%  | ⏳ Pendente     |
 
 ## Setup de Benchmarking
 
@@ -62,6 +62,7 @@ Operações com cache hit devem ser extremamente rápidas, utilizando apenas Red
 **Target**: p99 < 100ms
 
 Cache miss envolve:
+
 1. Redis miss
 2. MongoDB query
 3. Cache warming (async)
@@ -71,6 +72,7 @@ Cache miss envolve:
 **Target**: Linear scaling com número de sessões
 
 Com 1000 sessões:
+
 - 80% cache hit: p99 < 500ms
 - 50% cache hit: p99 < 1500ms
 - 0% cache hit: p99 < 2000ms

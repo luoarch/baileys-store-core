@@ -24,12 +24,16 @@ const createMockLogger = () => ({
 // Mock Redis
 const createMockRedis = () => ({
   hset: vi.fn().mockResolvedValue(1),
+  hsetnx: vi.fn().mockResolvedValue(1), // 1 = new entry added
   hget: vi.fn().mockResolvedValue(null),
   hgetall: vi.fn().mockResolvedValue({}),
   hdel: vi.fn().mockResolvedValue(1),
   keys: vi.fn().mockResolvedValue([]),
   expire: vi.fn().mockResolvedValue(1),
   quit: vi.fn().mockResolvedValue('OK'),
+  lpush: vi.fn().mockResolvedValue(1),
+  lrange: vi.fn().mockResolvedValue([]),
+  llen: vi.fn().mockResolvedValue(0),
 });
 
 // Mock MongoDB Store
@@ -106,7 +110,7 @@ describe('OutboxManager - Complete Coverage', () => {
 
         await outbox.addEntry(sessionId, patch as any, version, fencingToken);
 
-        expect(mockRedis.hset).toHaveBeenCalledWith(
+        expect(mockRedis.hsetnx).toHaveBeenCalledWith(
           'outbox:test-session',
           '1',
           expect.stringContaining('"sessionId":"test-session"'),
@@ -140,15 +144,16 @@ describe('OutboxManager - Complete Coverage', () => {
 
         await outbox.addEntry(sessionId, patch as any, version);
 
-        expect(mockRedis.hset).toHaveBeenCalledWith(
+        expect(mockRedis.hsetnx).toHaveBeenCalledWith(
           'outbox:test-session',
           '2',
           expect.stringContaining('"sessionId":"test-session"'),
         );
       });
 
-      it('should handle Redis hset failure', async () => {
-        mockRedis.hset = vi.fn().mockRejectedValue(new Error('Redis connection failed'));
+      it('should handle Redis hsetnx failure', async () => {
+        // addEntry now uses hsetnx instead of hset
+        mockRedis.hsetnx = vi.fn().mockRejectedValue(new Error('Redis connection failed'));
 
         await expect(outbox.addEntry('test', {}, 1)).rejects.toThrow('Redis connection failed');
       });
@@ -199,6 +204,7 @@ describe('OutboxManager - Complete Coverage', () => {
         await outbox.markCompleted(sessionId, version);
 
         expect(mockRedis.hget).toHaveBeenCalledWith('outbox:test-session', '1');
+        // markCompleted uses hset to update existing entry (not hsetnx)
         expect(mockRedis.hset).toHaveBeenCalledWith(
           'outbox:test-session',
           '1',
@@ -304,6 +310,7 @@ describe('OutboxManager - Complete Coverage', () => {
 
         await outbox.markFailed(sessionId, version, error);
 
+        // markFailed uses hset to update existing entry (not hsetnx)
         expect(mockRedis.hset).toHaveBeenCalledWith(
           'outbox:test-session',
           '1',
@@ -827,7 +834,7 @@ describe('OutboxManager - Complete Coverage', () => {
 
       await outbox.reconcile();
 
-      // Deve ter chamado markFailed
+      // Deve ter chamado markFailed - reconciliation uses hset (not hsetnx) for status updates
       expect(mockRedis.hget).toHaveBeenCalledWith('outbox:session1', '1');
       expect(mockRedis.hset).toHaveBeenCalledWith(
         'outbox:session1',
@@ -936,17 +943,20 @@ describe('OutboxManager - Complete Coverage', () => {
       // Reconciliação sem entries processadas
       mockRedis.keys = vi.fn().mockResolvedValue([]);
 
-      await outbox.reconcile();
+      const result = await outbox.reconcile();
 
+      // No entries to process, returns 0
+      expect(result).toBe(0);
       const stats = outbox.getStats();
-      expect(stats.avgLatency).toBeNaN();
+      // avgLatency stays at initial value (0) when no entries processed
+      expect(stats.avgLatency).toBe(0);
     });
   });
 
   describe('Reconciler Lifecycle', () => {
     it('should start reconciler', () => {
       vi.useFakeTimers();
-      const reconcileSpy = vi.spyOn(outbox, 'reconcile').mockResolvedValue();
+      const reconcileSpy = vi.spyOn(outbox, 'reconcile').mockResolvedValue(0);
 
       outbox.startReconciler();
 
@@ -1132,7 +1142,7 @@ describe('OutboxManager - Complete Coverage', () => {
 
       await outbox.addEntry(sessionId, patch as any, 1);
 
-      expect(mockRedis.hset).toHaveBeenCalledWith(
+      expect(mockRedis.hsetnx).toHaveBeenCalledWith(
         'outbox:session/with:special@chars',
         '1',
         expect.any(String),
@@ -1145,7 +1155,7 @@ describe('OutboxManager - Complete Coverage', () => {
 
       await outbox.addEntry(sessionId, patch as any, 0);
 
-      expect(mockRedis.hset).toHaveBeenCalledWith('outbox:test-session', '0', expect.any(String));
+      expect(mockRedis.hsetnx).toHaveBeenCalledWith('outbox:test-session', '0', expect.any(String));
     });
 
     it('should handle multiple entries for same session', async () => {
@@ -1156,7 +1166,7 @@ describe('OutboxManager - Complete Coverage', () => {
       await outbox.addEntry(sessionId, patch as any, 2);
       await outbox.addEntry(sessionId, patch as any, 3);
 
-      expect(mockRedis.hset).toHaveBeenCalledTimes(3);
+      expect(mockRedis.hsetnx).toHaveBeenCalledTimes(3);
     });
 
     it('should handle very large patch data', async () => {
@@ -1186,7 +1196,7 @@ describe('OutboxManager - Complete Coverage', () => {
 
       await outbox.addEntry(sessionId, largePatch as any, 1);
 
-      expect(mockRedis.hset).toHaveBeenCalledWith(
+      expect(mockRedis.hsetnx).toHaveBeenCalledWith(
         'outbox:test-session',
         '1',
         expect.stringContaining('x'.repeat(100)),
@@ -1435,7 +1445,7 @@ describe('OutboxManager - Complete Coverage', () => {
           status: 'pending',
           createdAt: Date.now(),
           updatedAt: Date.now(),
-          attempts: 2,
+          attempts: 1, // 1 attempt means it can be retried (< MAX_RETRY_ATTEMPTS - 1 = 2)
         }),
       };
 
@@ -1446,7 +1456,8 @@ describe('OutboxManager - Complete Coverage', () => {
       await outbox.reconcile();
 
       const stats = outbox.getStats();
-      expect(stats.totalRetried).toBe(2);
+      // totalRetried is incremented by 1 when entry fails but is still retryable
+      expect(stats.totalRetried).toBe(1);
     });
 
     it('should update lastRunAt timestamp', async () => {
@@ -1510,7 +1521,7 @@ describe('OutboxManager - Complete Coverage', () => {
 
         await outbox.reconcile();
 
-        // Deve ter chamado markFailed para cada tipo de erro
+        // Deve ter chamado markFailed para cada tipo de erro - reconciliation uses hset for status
         expect(mockRedis.hget).toHaveBeenCalled();
         expect(mockRedis.hset).toHaveBeenCalledWith(
           'outbox:session1',
@@ -1524,8 +1535,8 @@ describe('OutboxManager - Complete Coverage', () => {
       // Mock Redis.keys para falhar
       mockRedis.keys = vi.fn().mockRejectedValue(new Error('Redis connection failed'));
 
-      // Deve capturar erro e não falhar
-      await expect(outbox.reconcile()).resolves.toBeUndefined();
+      // Deve capturar erro e retornar 0
+      await expect(outbox.reconcile()).resolves.toBe(0);
     });
 
     it('should handle reconciliation with mixed success and failure', async () => {
@@ -1666,7 +1677,8 @@ describe('OutboxManager - Complete Coverage', () => {
       mockRedis.hgetall = vi.fn().mockResolvedValue(session1Entries);
 
       // Deve capturar erro de JSON parse e continuar
-      await expect(outbox.reconcile()).resolves.toBeUndefined();
+      // Returns 0 since no entries were successfully processed
+      await expect(outbox.reconcile()).resolves.toBe(0);
     });
 
     it('should handle Redis hset failure during reconciliation', async () => {

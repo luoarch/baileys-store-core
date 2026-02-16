@@ -114,11 +114,14 @@ export class RedisAuthStore implements AuthStore {
           30000, // max 30s
         );
 
-        this.logger.warn(`Attempting Redis reconnection (attempt ${String(times)}), waiting ${String(delay)}ms`, {
-          attempt: times,
-          delayMs: delay,
-          action: 'redis_reconnection_attempt',
-        });
+        this.logger.warn(
+          `Attempting Redis reconnection (attempt ${String(times)}), waiting ${String(delay)}ms`,
+          {
+            attempt: times,
+            delayMs: delay,
+            action: 'redis_reconnection_attempt',
+          },
+        );
         return delay;
       },
       lazyConnect: false,
@@ -193,9 +196,13 @@ export class RedisAuthStore implements AuthStore {
       await this.client.quit();
       this.connected = false;
     } catch (error) {
-      this.logger.error('Erro ao desconectar do Redis', error instanceof Error ? error : undefined, {
-        action: 'redis_disconnect_error',
-      });
+      this.logger.error(
+        'Erro ao desconectar do Redis',
+        error instanceof Error ? error : undefined,
+        {
+          action: 'redis_disconnect_error',
+        },
+      );
     }
   }
 
@@ -251,6 +258,7 @@ export class RedisAuthStore implements AuthStore {
 
   /**
    * Atualiza snapshot (total ou parcial)
+   * Uses Redis pipeline for atomic batch writes
    */
   async set(
     sessionId: SessionId,
@@ -263,18 +271,23 @@ export class RedisAuthStore implements AuthStore {
 
       const newVersion = (expectedVersion ?? 0) + 1;
       const updatedAt = new Date();
+      const ttl = this.config.ttl.defaultTtl;
 
-      const promises: Promise<void>[] = [];
+      // Prepare serialized data BEFORE pipeline (async serialization must happen first)
+      const serializedData: { key: string; value: string }[] = [];
 
-      // Salvar creds se houver
+      // Serialize creds if present
       if (patch.creds) {
-        promises.push(
-          this.setField(sessionId, 'creds', {
-            creds: patch.creds,
-            version: newVersion,
-            updatedAt,
-          }),
-        );
+        const credsData: StoredCreds = {
+          creds: patch.creds,
+          version: newVersion,
+          updatedAt,
+        };
+        const serialized = await this.serializeForPipeline(credsData);
+        serializedData.push({
+          key: this.buildKey(sessionId, 'creds'),
+          value: serialized,
+        });
       }
 
       // CRÍTICO: MESCLAR keys com as existentes (NÃO sobrescrever!)
@@ -292,7 +305,6 @@ export class RedisAuthStore implements AuthStore {
               const value = patch.keys[type][id];
               if (value === null || value === undefined) {
                 // Deletar se valor é null/undefined
-                // delete mergedKeys[type][id];
                 const { [id]: _unused, ...rest } = mergedKeys[type];
                 void _unused; // Suppress unused variable warning
                 mergedKeys[type] = rest;
@@ -304,26 +316,48 @@ export class RedisAuthStore implements AuthStore {
           }
         }
 
-        promises.push(
-          this.setField(sessionId, 'keys', {
-            keys: mergedKeys,
-            appState: patch.appState ?? current?.appState,
-            version: newVersion,
-            updatedAt,
-          }),
-        );
+        const keysData: StoredKeys = {
+          keys: mergedKeys,
+          appState: patch.appState ?? current?.appState,
+          version: newVersion,
+          updatedAt,
+        };
+        const serialized = await this.serializeForPipeline(keysData);
+        serializedData.push({
+          key: this.buildKey(sessionId, 'keys'),
+          value: serialized,
+        });
       }
 
-      await Promise.all(promises);
-
-      // Salvar metadata (version global) separadamente
+      // Prepare metadata
       const metaKey = this.buildKey(sessionId, 'meta');
       const metaData = JSON.stringify({
         version: newVersion,
         updatedAt: updatedAt.toISOString(),
       });
 
-      await this.client.setex(metaKey, this.config.ttl.defaultTtl, metaData);
+      // Execute all writes atomically via pipeline
+      const pipeline = this.client.pipeline();
+
+      for (const { key, value } of serializedData) {
+        pipeline.setex(key, ttl, value);
+      }
+      pipeline.setex(metaKey, ttl, metaData);
+
+      const results = await pipeline.exec();
+
+      // Check for pipeline errors
+      if (results) {
+        for (const [err] of results) {
+          if (err) {
+            throw new StorageError(
+              'Pipeline failed',
+              'redis',
+              err instanceof Error ? err : new Error(String(err)),
+            );
+          }
+        }
+      }
 
       return {
         version: newVersion,
@@ -342,6 +376,22 @@ export class RedisAuthStore implements AuthStore {
         error instanceof Error ? error : undefined,
       );
     }
+  }
+
+  /**
+   * Serialize data for pipeline (encode + encrypt)
+   */
+  private async serializeForPipeline(data: StoredCreds | StoredKeys): Promise<string> {
+    const encoded = await this.codec.encode(data);
+    const encrypted = await this.crypto.encrypt(encoded);
+
+    return JSON.stringify({
+      ciphertext: encrypted.ciphertext.toString('base64'),
+      nonce: encrypted.nonce.toString('base64'),
+      keyId: encrypted.keyId,
+      schemaVersion: encrypted.schemaVersion,
+      timestamp: encrypted.timestamp.toISOString(),
+    });
   }
 
   /**
@@ -463,44 +513,6 @@ export class RedisAuthStore implements AuthStore {
     } catch {
       // Se falhar ao ler, retorna null (miss)
       return null;
-    }
-  }
-
-  /**
-   * Salva campo específico
-   */
-  private async setField(sessionId: SessionId, field: 'creds', data: StoredCreds): Promise<void>;
-  private async setField(sessionId: SessionId, field: 'keys', data: StoredKeys): Promise<void>;
-  private async setField(
-    sessionId: SessionId,
-    field: 'creds' | 'keys',
-    data: StoredCreds | StoredKeys,
-  ): Promise<void> {
-    try {
-      const key = this.buildKey(sessionId, field);
-
-      // Codificar (JSON + comprimir)
-      const encoded = await this.codec.encode(data);
-
-      // Criptografar
-      const encrypted = await this.crypto.encrypt(encoded);
-
-      // Serializar EncryptedData para JSON
-      const encryptedData = JSON.stringify({
-        ciphertext: encrypted.ciphertext.toString('base64'),
-        nonce: encrypted.nonce.toString('base64'),
-        keyId: encrypted.keyId,
-        schemaVersion: encrypted.schemaVersion,
-        timestamp: encrypted.timestamp.toISOString(),
-      });
-
-      await this.client.setex(key, this.config.ttl.defaultTtl, encryptedData);
-    } catch (error) {
-      throw new StorageError(
-        'Falha ao escrever no Redis',
-        'redis',
-        error instanceof Error ? error : undefined,
-      );
     }
   }
 

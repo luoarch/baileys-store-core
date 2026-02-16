@@ -7,12 +7,7 @@
  * Exits with code 0 if all presets are valid, 1 otherwise.
  */
 
-import {
-  DEVELOPMENT,
-  PRODUCTION,
-  TESTING,
-  validatePreset,
-} from '../src/config/presets.js';
+import { DEVELOPMENT, PRODUCTION, TESTING, validatePreset } from '../src/config/presets.js';
 
 // Colors for terminal output
 const colors = {
@@ -28,14 +23,14 @@ const colors = {
  */
 function validatePresetWithName(presetName, preset) {
   console.log(`\n${colors.blue}Validating ${presetName} preset...${colors.reset}`);
-  
+
   const errors = validatePreset(preset);
-  
+
   if (errors.length === 0) {
     console.log(`${colors.green}✅ ${presetName} preset is valid${colors.reset}`);
     return true;
   }
-  
+
   console.log(`${colors.red}❌ ${presetName} preset has validation errors:${colors.reset}`);
   for (const error of errors) {
     console.log(`  - ${error}`);
@@ -58,7 +53,7 @@ function main() {
   const allPassed = results.every((result) => result);
 
   console.log('');
-  
+
   if (allPassed) {
     console.log(`${colors.green}✅ All presets are valid!${colors.reset}\n`);
     process.exit(0);

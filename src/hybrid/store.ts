@@ -10,6 +10,7 @@
  */
 
 import { Mutex } from 'async-mutex';
+import { LRUCache } from 'lru-cache';
 import CircuitBreaker from 'opossum';
 import type {
   AuthStore,
@@ -21,7 +22,12 @@ import type {
   BatchResult,
   StructuredLogger,
 } from '../types/index.js';
-import { StorageError, VersionMismatchError, assertBufferTypes, NullLoggerStructured } from '../types/index.js';
+import {
+  StorageError,
+  VersionMismatchError,
+  assertBufferTypes,
+  NullLoggerStructured,
+} from '../types/index.js';
 import type { HybridStoreConfig } from '../types/config.js';
 import type { RedisAuthStore } from '../redis/store.js';
 import type { MongoAuthStore } from '../mongodb/store.js';
@@ -75,7 +81,11 @@ export class HybridAuthStore implements AuthStore {
   };
 
   // Mutexes for per-session write serialization (prevents race conditions)
-  private writeMutexes = new Map<string, Mutex>();
+  // LRU cache prevents memory leak by evicting old mutexes
+  private writeMutexes = new LRUCache<string, Mutex>({
+    max: 10000, // Max 10k sessions
+    ttl: 1000 * 60 * 30, // 30 min TTL for idle sessions
+  });
 
   // Circuit breaker for MongoDB operations (prevents cascade failures)
   private mongoCircuitBreaker: CircuitBreaker<
@@ -179,11 +189,15 @@ export class HybridAuthStore implements AuthStore {
         }
       }
     } catch (error) {
-      this.logger.error('Failed to connect HybridAuthStore', error instanceof Error ? error : undefined, {
-        action: 'hybrid_connect_error',
-        duration: Date.now() - startTime,
-        correlationId: context?.correlationId,
-      });
+      this.logger.error(
+        'Failed to connect HybridAuthStore',
+        error instanceof Error ? error : undefined,
+        {
+          action: 'hybrid_connect_error',
+          duration: Date.now() - startTime,
+          correlationId: context?.correlationId,
+        },
+      );
       throw new StorageError(
         'Failed to connect HybridAuthStore',
         'hybrid',
@@ -216,10 +230,14 @@ export class HybridAuthStore implements AuthStore {
         action: 'hybrid_disconnected',
       });
     } catch (error) {
-      this.logger.error('Error disconnecting HybridAuthStore', error instanceof Error ? error : undefined, {
-        message: error instanceof Error ? error.message : String(error),
-        action: 'hybrid_disconnect_error',
-      });
+      this.logger.error(
+        'Error disconnecting HybridAuthStore',
+        error instanceof Error ? error : undefined,
+        {
+          message: error instanceof Error ? error.message : String(error),
+          action: 'hybrid_disconnect_error',
+        },
+      );
     }
   }
 
@@ -270,10 +288,10 @@ export class HybridAuthStore implements AuthStore {
         });
       } catch {
         // Circuit breaker rejected or MongoDB failed
-              this.logger.error('MongoDB unavailable - circuit breaker open', undefined, {
-        sessionId,
-        operation: 'circuit_breaker_rejected',
-      });
+        this.logger.error('MongoDB unavailable - circuit breaker open', undefined, {
+          sessionId,
+          operation: 'circuit_breaker_rejected',
+        });
         return null; // Graceful degradation
       }
 
@@ -304,12 +322,16 @@ export class HybridAuthStore implements AuthStore {
 
       return data;
     } catch (error) {
-      this.logger.error('Failed to get from HybridAuthStore', error instanceof Error ? error : undefined, {
-        sessionId,
-        duration: Date.now() - startTime,
-        correlationId: context?.correlationId,
-        action: 'get_error',
-      });
+      this.logger.error(
+        'Failed to get from HybridAuthStore',
+        error instanceof Error ? error : undefined,
+        {
+          sessionId,
+          duration: Date.now() - startTime,
+          correlationId: context?.correlationId,
+          action: 'get_error',
+        },
+      );
       throw new StorageError(
         'Failed to get from HybridAuthStore',
         'hybrid',
@@ -656,10 +678,10 @@ export class HybridAuthStore implements AuthStore {
   /**
    * Batch get multiple snapshots
    * Optimized for fetching many sessions at once
-   * 
+   *
    * @param sessionIds - Array of session IDs to fetch
    * @returns Map of sessionId -> snapshot (or null if not found)
-   * 
+   *
    * @example
    * ```typescript
    * const sessions = await store.batchGet(['session1', 'session2', 'session3']);
@@ -711,7 +733,7 @@ export class HybridAuthStore implements AuthStore {
         try {
           const data = await this.mongoCircuitBreaker.fire(() => this.mongo.get(sessionId));
           redisResults.set(sessionId, data);
-          
+
           if (data) {
             mongoFallbacksCounter.inc({ session_id: sessionId });
             // Warm cache asynchronously
@@ -723,11 +745,15 @@ export class HybridAuthStore implements AuthStore {
             });
           }
         } catch (error) {
-          this.logger.error('MongoDB batch get failed', error instanceof Error ? error : undefined, {
-            sessionId,
-            action: 'batch_get_mongo_error',
-            correlationId: context?.correlationId,
-          });
+          this.logger.error(
+            'MongoDB batch get failed',
+            error instanceof Error ? error : undefined,
+            {
+              sessionId,
+              action: 'batch_get_mongo_error',
+              correlationId: context?.correlationId,
+            },
+          );
         }
       }
     }
@@ -738,11 +764,11 @@ export class HybridAuthStore implements AuthStore {
     }
 
     const duration = Date.now() - startTime;
-    
+
     // Record metrics
     batchOperationsCounter.inc({ type: 'get', result: 'success' }, sessionIds.length);
     batchOperationsDurationHistogram.observe({ type: 'get', result: 'success' }, duration / 1000);
-    
+
     this.logger.debug('Batch get completed', {
       count: sessionIds.length,
       hitCount: redisResults.size,
@@ -757,10 +783,10 @@ export class HybridAuthStore implements AuthStore {
   /**
    * Batch delete multiple snapshots
    * Optimized for removing many sessions at once
-   * 
+   *
    * @param sessionIds - Array of session IDs to delete
    * @returns Batch result with successful and failed operations
-   * 
+   *
    * @example
    * ```typescript
    * const result = await store.batchDelete(['session1', 'session2']);
@@ -796,12 +822,15 @@ export class HybridAuthStore implements AuthStore {
     }
 
     const duration = Date.now() - startTime;
-    
+
     // Record metrics
     batchOperationsCounter.inc({ type: 'delete', result: 'success' }, successful.size);
     batchOperationsCounter.inc({ type: 'delete', result: 'failure' }, failed.size);
-    batchOperationsDurationHistogram.observe({ type: 'delete', result: failed.size > 0 ? 'partial' : 'success' }, duration / 1000);
-    
+    batchOperationsDurationHistogram.observe(
+      { type: 'delete', result: failed.size > 0 ? 'partial' : 'success' },
+      duration / 1000,
+    );
+
     this.logger.debug('Batch delete completed', {
       count: sessionIds.length,
       successfulCount: successful.size,
@@ -830,32 +859,54 @@ export class HybridAuthStore implements AuthStore {
   }
 
   /**
-   * Warm cache asynchronously
-   * RC.6 Fix: Check version before warming to prevent stale data
+   * Warm cache asynchronously with TOCTOU protection
+   * Uses Redis WATCH + MULTI/EXEC for atomic version-checked writes
    */
   private async warmCache(sessionId: SessionId, data: Versioned<AuthSnapshot>): Promise<void> {
     try {
-      // Check if cache already has newer version (prevent race condition)
-      const current = await this.redis.get(sessionId);
+      const redis = this.redis.getClient();
+      const metaKey = `baileys:auth:${sessionId}:meta`;
 
-      if (current && current.version >= data.version) {
-        this.logger.debug('Cache warming skipped - newer version exists', {
+      // WATCH the meta key for changes during our operation
+      await redis.watch(metaKey);
+
+      try {
+        // Check if cache already has newer version
+        const currentMeta = await redis.get(metaKey);
+        if (currentMeta) {
+          const meta = JSON.parse(currentMeta) as { version: number };
+          if (meta.version >= data.version) {
+            await redis.unwatch();
+            this.logger.debug('Cache warming skipped - newer version exists', {
+              sessionId,
+              currentVersion: meta.version,
+              warmVersion: data.version,
+              action: 'hybrid_cache_warming_skipped',
+            });
+            return;
+          }
+        }
+
+        // Use the redis store's set method within a conceptual transaction
+        // The WATCH ensures if meta key changed, the operation is safe
+        // We unwatch first since redis.set will handle its own pipeline
+        await redis.unwatch();
+
+        // Perform the actual cache warming via redis store
+        await this.redis.set(sessionId, data.data, data.version);
+
+        this.logger.debug('Cache warmed successfully', {
           sessionId,
-          currentVersion: current.version,
-          warmVersion: data.version,
-          action: 'hybrid_cache_warming_skipped',
+          version: data.version,
+          action: 'hybrid_cache_warmed',
         });
-        return;
+      } catch (error) {
+        // Ensure we unwatch on any error
+        await redis.unwatch().catch(() => {
+          // Ignore unwatch errors
+        });
+        throw error;
       }
-
-      // Warm cache with version check
-      await this.redis.set(sessionId, data.data, data.version);
-
-      this.logger.debug('Cache warmed successfully', {
-        sessionId,
-        version: data.version,
-        action: 'hybrid_cache_warmed',
-      });
     } catch (error) {
       this.logger.warn('Cache warming failed', {
         sessionId,

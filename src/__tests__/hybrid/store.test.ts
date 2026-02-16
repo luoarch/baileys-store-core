@@ -17,6 +17,43 @@ import { withContext } from '../../context/execution-context.js';
 class MockRedisStore {
   private data = new Map<string, Versioned<AuthSnapshot>>();
   connected = false;
+  private mockClientInstance: ReturnType<typeof this.createMockClient> | null = null;
+
+  private createMockClient() {
+    const getData = (sessionId: string) => this.data.get(sessionId);
+    return {
+      hset: vi.fn().mockResolvedValue(1),
+      hgetall: vi.fn().mockResolvedValue({}),
+      keys: vi.fn().mockResolvedValue([]),
+      del: vi.fn().mockResolvedValue(1),
+      expire: vi.fn().mockResolvedValue(1),
+      hget: vi.fn().mockResolvedValue(null),
+      hdel: vi.fn().mockResolvedValue(1),
+      watch: vi.fn().mockResolvedValue('OK'),
+      unwatch: vi.fn().mockResolvedValue('OK'),
+      // OutboxManager methods
+      hsetnx: vi.fn().mockResolvedValue(1), // 1 = new entry added
+      lpush: vi.fn().mockResolvedValue(1),
+      lrange: vi.fn().mockResolvedValue([]),
+      llen: vi.fn().mockResolvedValue(0),
+      // Dynamic get that returns version info from store data
+      get: vi.fn().mockImplementation((key: string) => {
+        // Extract sessionId from meta key (format: baileys:auth:{sessionId}:meta)
+        const match = /baileys:auth:(.+):meta/.exec(key);
+        if (match?.[1]) {
+          const sessionId = match[1];
+          const data = getData(sessionId);
+          if (data) {
+            return JSON.stringify({
+              version: data.version,
+              updatedAt: data.updatedAt.toISOString(),
+            });
+          }
+        }
+        return null;
+      }),
+    };
+  }
 
   async connect() {
     this.connected = true;
@@ -69,15 +106,14 @@ class MockRedisStore {
   }
 
   get client() {
-    return {
-      hset: vi.fn(),
-      hgetall: vi.fn(),
-      keys: vi.fn().mockResolvedValue([]),
-      del: vi.fn(),
-      expire: vi.fn(),
-      hget: vi.fn(),
-      hdel: vi.fn(),
-    };
+    if (!this.mockClientInstance) {
+      this.mockClientInstance = this.createMockClient();
+    }
+    return this.mockClientInstance;
+  }
+
+  getClient() {
+    return this.client;
   }
 }
 
@@ -786,15 +822,23 @@ describe('HybridAuthStore', () => {
         updatedAt: new Date(),
       };
 
-      // Mock Redis como não conectado
+      // Mock Redis como não conectado - store get returns null (cache miss)
       redis.isHealthy = vi.fn().mockResolvedValue(false);
       redis.get = vi.fn().mockResolvedValue(null);
       redis.set = vi.fn().mockResolvedValue({ version: 1, updatedAt: new Date(), success: true });
       mongo.get = vi.fn().mockResolvedValue(data);
 
+      // Mock the internal client's get to return null (no existing meta)
+      const mockClient = redis.getClient();
+      (mockClient.get as ReturnType<typeof vi.fn>).mockResolvedValue(null);
+
       const result = await store.get(sessionId);
 
       expect(result).toEqual(data);
+
+      // Wait for async warmCache to complete
+      await new Promise((resolve) => setTimeout(resolve, 50));
+
       // Deve ter aquecido o cache (chamou Redis SET)
       expect(redis.set).toHaveBeenCalled();
     });
@@ -1325,13 +1369,16 @@ describe('HybridAuthStore', () => {
       redis.get = vi
         .fn()
         .mockResolvedValueOnce(null) // Primeiro get
-        .mockResolvedValueOnce(null); // Segundo get no warmCache
+        .mockResolvedValueOnce(null); // Segundo get no warmCache (not used anymore)
       mongo.get = vi.fn().mockResolvedValue(data);
 
       const setSpy = vi.spyOn(redis, 'set');
 
       const result = await store.get(sessionId);
       expect(result).toEqual(data);
+
+      // Wait for async warmCache to complete
+      await new Promise((resolve) => setTimeout(resolve, 50));
 
       // Deve tentar fazer warm cache
       expect(setSpy).toHaveBeenCalled();
@@ -1348,12 +1395,15 @@ describe('HybridAuthStore', () => {
       redis.get = vi
         .fn()
         .mockResolvedValueOnce(null) // Primeiro get
-        .mockResolvedValueOnce(null); // Segundo get no warmCache
+        .mockResolvedValueOnce(null); // Segundo get no warmCache (not used anymore)
       mongo.get = vi.fn().mockResolvedValue(data);
       redis.set = vi.fn().mockRejectedValue(new Error('Redis set failed'));
 
       const result = await store.get(sessionId);
       expect(result).toEqual(data);
+
+      // Wait for async warmCache to complete
+      await new Promise((resolve) => setTimeout(resolve, 50));
 
       // Deve tentar fazer warm cache mas falhar silenciosamente
       expect(redis.set).toHaveBeenCalled();
@@ -1419,7 +1469,7 @@ describe('HybridAuthStore', () => {
       redis.get = vi
         .fn()
         .mockResolvedValueOnce(null) // Primeiro get
-        .mockResolvedValueOnce(null); // Segundo get no warmCache
+        .mockResolvedValueOnce(null); // Segundo get no warmCache (not used anymore)
       mongo.get = vi.fn().mockResolvedValue(data);
       redis.set = vi.fn().mockImplementation(
         () =>
@@ -1432,6 +1482,9 @@ describe('HybridAuthStore', () => {
 
       const result = await store.get(sessionId);
       expect(result).toEqual(data);
+
+      // Wait for async warmCache to attempt and fail
+      await new Promise((resolve) => setTimeout(resolve, 150));
 
       // Deve tentar fazer warm cache mas falhar silenciosamente
       expect(redis.set).toHaveBeenCalled();
@@ -2370,11 +2423,15 @@ describe('HybridAuthStore', () => {
       });
 
       // Verify logger was called with correlationId
-      const logCalls = ((store as any).logger.debug).mock.calls;
-      const hasCorrelationId = logCalls.some((call: unknown[]) => 
-        call.some((arg: unknown) => 
-          typeof arg === 'object' && arg !== null && 'correlationId' in arg && (arg as { correlationId?: string }).correlationId === correlationId
-        )
+      const logCalls = (store as any).logger.debug.mock.calls;
+      const hasCorrelationId = logCalls.some((call: unknown[]) =>
+        call.some(
+          (arg: unknown) =>
+            typeof arg === 'object' &&
+            arg !== null &&
+            'correlationId' in arg &&
+            (arg as { correlationId?: string }).correlationId === correlationId,
+        ),
       );
       expect(hasCorrelationId).toBe(true);
 

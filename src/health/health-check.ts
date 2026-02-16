@@ -70,9 +70,7 @@ export interface HealthCheckConfig {
  * });
  * ```
  */
-export async function performHealthCheck(
-  config: HealthCheckConfig,
-): Promise<HealthStatus> {
+export async function performHealthCheck(config: HealthCheckConfig): Promise<HealthStatus> {
   const components: ComponentHealth[] = [];
   const timestamp = new Date().toISOString();
 
@@ -120,11 +118,12 @@ export async function performHealthCheck(
   // Determine overall status
   const allHealthy = redisHealthy && mongoHealthy;
   const circuitBreakerOpen = config.circuitBreaker?.status
-    ? (typeof config.circuitBreaker.status === 'string' 
-        ? config.circuitBreaker.status === 'open' 
-        : false)
+    ? typeof config.circuitBreaker.status === 'string'
+      ? config.circuitBreaker.status === 'open'
+      : false
     : false;
-  const status = allHealthy && !circuitBreakerOpen ? 'healthy' : circuitBreakerOpen ? 'degraded' : 'unhealthy';
+  const status =
+    allHealthy && !circuitBreakerOpen ? 'healthy' : circuitBreakerOpen ? 'degraded' : 'unhealthy';
 
   // Collect metadata
   const metadata: HealthStatus['metadata'] = {};
@@ -136,9 +135,10 @@ export async function performHealthCheck(
   }
   if (config.circuitBreaker) {
     const state = config.circuitBreaker.status;
-    metadata.circuitBreakerState = (typeof state === 'string' 
-      ? state 
-      : 'unknown') as 'closed' | 'open' | 'half-open';
+    metadata.circuitBreakerState = (typeof state === 'string' ? state : 'unknown') as
+      | 'closed'
+      | 'open'
+      | 'half-open';
   }
 
   return {

@@ -163,7 +163,7 @@ describe('Validation Schemas', () => {
       const result = SecurityConfigSchema.safeParse(invalid);
       expect(result.success).toBe(false);
       if (!result.success) {
-        expect(result.error.errors.some(e => e.message.includes('keyRotationDays'))).toBe(true);
+        expect(result.error.errors.some((e) => e.message.includes('keyRotationDays'))).toBe(true);
       }
     });
   });
@@ -247,7 +247,7 @@ describe('Validation Schemas', () => {
       const result = HybridStoreConfigSchema.safeParse(invalid);
       expect(result.success).toBe(false);
       if (!result.success) {
-        expect(result.error.errors.some(e => e.message.includes('masterKey'))).toBe(true);
+        expect(result.error.errors.some((e) => e.message.includes('masterKey'))).toBe(true);
       }
     });
 

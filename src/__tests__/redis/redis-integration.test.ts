@@ -1,6 +1,19 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { StorageError } from '../../types';
 
+// Mock pipeline commands collector
+const createMockPipeline = () => {
+  const commands: { method: string; args: unknown[] }[] = [];
+  const pipeline = {
+    setex: (...args: unknown[]) => {
+      commands.push({ method: 'setex', args });
+      return pipeline;
+    },
+    exec: vi.fn().mockResolvedValue(commands.map(() => [null, 'OK'])),
+  };
+  return pipeline;
+};
+
 // Mock do ioredis com comportamento real
 const mockRedisClient = {
   ping: vi.fn(),
@@ -12,6 +25,7 @@ const mockRedisClient = {
   quit: vi.fn(),
   on: vi.fn(),
   emit: vi.fn(),
+  pipeline: vi.fn().mockImplementation(createMockPipeline),
 };
 
 // Mock do ioredis constructor
@@ -70,6 +84,8 @@ describe('RedisAuthStore - Integration Tests', () => {
     mockRedisClient.exists.mockResolvedValue(0);
     mockRedisClient.expire.mockResolvedValue(1);
     mockRedisClient.quit.mockResolvedValue('OK');
+    // Reset pipeline to working implementation
+    mockRedisClient.pipeline.mockImplementation(createMockPipeline);
   });
 
   afterEach(() => {
@@ -211,7 +227,8 @@ describe('RedisAuthStore - Integration Tests', () => {
 
       expect(result.success).toBe(true);
       expect(result.version).toBe(1);
-      expect(mockRedisClient.setex).toHaveBeenCalled();
+      // Now uses pipeline instead of direct setex
+      expect(mockRedisClient.pipeline).toHaveBeenCalled();
     });
 
     it('deve salvar apenas keys', async () => {
@@ -450,7 +467,14 @@ describe('RedisAuthStore - Integration Tests', () => {
       mockRedisClient.ping.mockResolvedValue('PONG');
       await store.connect();
 
-      mockRedisClient.setex.mockRejectedValue(new Error('Redis error'));
+      // Mock pipeline to return error in exec results
+      mockRedisClient.pipeline.mockImplementation(() => {
+        const pipeline = {
+          setex: () => pipeline,
+          exec: vi.fn().mockResolvedValue([[new Error('Redis error'), null]]),
+        };
+        return pipeline;
+      });
 
       await expect(store.set('test-session', { creds: {} } as any)).rejects.toThrow(StorageError);
     });

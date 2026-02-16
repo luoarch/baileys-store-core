@@ -1,9 +1,9 @@
 /**
  * @baileys-store/core - Load Testing with k6
- * 
+ *
  * Este script testa a escalabilidade do baileys-store-core sob carga
  * Requer: k6 instalado (https://k6.io/docs/getting-started/installation/)
- * 
+ *
  * Execute: k6 run k6-load-test.js
  */
 
@@ -37,11 +37,11 @@ export const options = {
   ],
   thresholds: {
     // 95% das requisições devem completar em menos de 200ms
-    'http_req_duration': ['p(95)<200'],
+    http_req_duration: ['p(95)<200'],
     // 99% das requisições devem completar em menos de 500ms
-    'http_req_duration': ['p(99)<500'],
+    http_req_duration: ['p(99)<500'],
     // Taxa de erro < 1%
-    'errors': ['rate<0.01'],
+    errors: ['rate<0.01'],
   },
 };
 
@@ -86,13 +86,13 @@ export default function () {
     const res = http.post(`${BASE_URL}/api/sessions/${sessionId}`, JSON.stringify(testData), {
       headers: { 'Content-Type': 'application/json' },
     });
-    
+
     setLatency.add(Date.now() - startTime);
-    
+
     const success = check(res, {
       'set status is 200 or 201': (r) => r.status === 200 || r.status === 201,
     });
-    
+
     errorRate.add(!success);
   });
 
@@ -102,9 +102,9 @@ export default function () {
   group('Get Operation', () => {
     const startTime = Date.now();
     const res = http.get(`${BASE_URL}/api/sessions/${sessionId}`);
-    
+
     getLatency.add(Date.now() - startTime);
-    
+
     const success = check(res, {
       'get status is 200': (r) => r.status === 200,
       'response contains creds': (r) => {
@@ -116,7 +116,7 @@ export default function () {
         }
       },
     });
-    
+
     errorRate.add(!success);
   });
 
@@ -126,13 +126,13 @@ export default function () {
   group('Delete Operation', () => {
     const startTime = Date.now();
     const res = http.del(`${BASE_URL}/api/sessions/${sessionId}`);
-    
+
     deleteLatency.add(Date.now() - startTime);
-    
+
     const success = check(res, {
       'delete status is 200 or 204': (r) => r.status === 200 || r.status === 204,
     });
-    
+
     errorRate.add(!success);
   });
 

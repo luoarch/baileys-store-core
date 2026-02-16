@@ -32,7 +32,6 @@ vi.mock('ioredis', () => {
   };
 });
 
-
 describe('RedisAuthStore Edge Cases', () => {
   let store: RedisAuthStore | undefined;
   let config: RedisStoreConfig;
@@ -163,7 +162,6 @@ describe('RedisAuthStore Edge Cases', () => {
           30000,
         );
       };
-
 
       // Testar se a estratégia de retry funciona
       expect(retryStrategy(1)).toBe(2000);

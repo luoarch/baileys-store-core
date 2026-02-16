@@ -312,10 +312,10 @@ describe('MongoDB Store Static Functions', () => {
     it('deve detectar conflito de versão', () => {
       let currentVersion = 2;
       const expectedVersion = 1;
-      
+
       // Simular atualização de outra instância
       currentVersion = 3;
-      
+
       const hasConflict = currentVersion !== expectedVersion;
 
       expect(hasConflict).toBe(true);

@@ -56,9 +56,7 @@ export interface ValidationReport {
  * }
  * ```
  */
-export function validateAndReportConfig(
-  config: unknown,
-): ValidationReport {
+export function validateAndReportConfig(config: unknown): ValidationReport {
   const result = HybridStoreConfigSchema.safeParse(config);
 
   if (!result.success) {
@@ -219,9 +217,7 @@ export function analyzeConfigPerformance(config: HybridStoreConfig): number {
  * @param config - Configuration or preset to scan
  * @returns Array of security warnings
  */
-export function scanConfigSecurity(
-  config: HybridStoreConfig | ConfigPreset,
-): string[] {
+export function scanConfigSecurity(config: HybridStoreConfig | ConfigPreset): string[] {
   const warnings: string[] = [];
 
   if ('security' in config) {
@@ -232,12 +228,16 @@ export function scanConfigSecurity(
 
     // Check key rotation
     if (config.security.enableEncryption && config.security.keyRotationDays > 365) {
-      warnings.push('⚠️  Key rotation period > 1 year - consider rotating keys more frequently (90-180 days)');
+      warnings.push(
+        '⚠️  Key rotation period > 1 year - consider rotating keys more frequently (90-180 days)',
+      );
     }
 
     // Check debug logging
     if (config.security.enableDebugLogging && config.security.environment === 'production') {
-      warnings.push('⚠️  Debug logging enabled in production - consider disabling for security and performance');
+      warnings.push(
+        '⚠️  Debug logging enabled in production - consider disabling for security and performance',
+      );
     }
   }
 
@@ -252,8 +252,11 @@ function generateOptimizationWarnings(config: HybridStoreConfig): string[] {
 
   // TTL optimization
   if (config.ttl.defaultTtl < 300) {
-    warnings.push('💡 Consider increasing defaultTtl to reduce database load (current: ' +
-                  String(config.ttl.defaultTtl) + 's, recommended: 300-3600s)');
+    warnings.push(
+      '💡 Consider increasing defaultTtl to reduce database load (current: ' +
+        String(config.ttl.defaultTtl) +
+        's, recommended: 300-3600s)',
+    );
   }
 
   // Compression recommendation
@@ -263,8 +266,11 @@ function generateOptimizationWarnings(config: HybridStoreConfig): string[] {
 
   // Timeout optimization
   if (config.resilience.operationTimeout > 10000) {
-    warnings.push('💡 Consider reducing operationTimeout for faster failure detection (current: ' +
-                  String(config.resilience.operationTimeout) + 'ms, recommended: 3000-5000ms)');
+    warnings.push(
+      '💡 Consider reducing operationTimeout for faster failure detection (current: ' +
+        String(config.resilience.operationTimeout) +
+        'ms, recommended: 3000-5000ms)',
+    );
   }
 
   return warnings;

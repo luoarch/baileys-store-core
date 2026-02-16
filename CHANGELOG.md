@@ -7,6 +7,43 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.0-rc.4] - 2026-02-16
+
+### Fixed
+
+- **MongoDB**: Re-enabled optimistic locking version checking (was disabled)
+- **Redis**: Replaced `Promise.all()` with pipeline for atomic batch writes
+- **Hybrid**: Fixed TOCTOU race condition in cache warming with Redis WATCH
+- **Hybrid**: Fixed mutex memory leak with LRU cache (max 10k sessions, 30 min TTL)
+- **Outbox**: Fixed deduplication using HSETNX instead of HSET
+- **Outbox**: Added batch reconciliation with p-limit concurrency control
+- **Outbox**: Added dead letter queue (DLQ) for failed entries
+
+### Added
+
+- `lru-cache` dependency for mutex memory management
+- `p-limit` dependency for reconciliation concurrency control
+- `getDeadLetterEntries()` and `getDeadLetterSize()` methods in OutboxManager
+
+### Changed
+
+- `reconcile()` now returns `Promise<number>` (count of successfully processed entries)
+
+## [1.0.0-rc.3] - 2026-02-15
+
+### Added
+
+- Full test suite expansion (52 → 652 tests)
+- Batch operations (`batchGet`, `batchDelete`)
+- Enhanced health checks with component status
+- Correlation ID propagation via AsyncLocalStorage
+- Load testing with k6 (docs/LOAD_TESTING.md)
+- Mutation testing with Stryker (54% score)
+
+### Changed
+
+- Coverage improved to 96.3% lines, 80.42% branches
+
 ## [1.0.0-rc.2] - 2025-01-25
 
 ### 🔧 Fixes

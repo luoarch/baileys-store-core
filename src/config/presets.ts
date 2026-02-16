@@ -178,7 +178,12 @@ export type PresetName = keyof typeof PRESETS;
  */
 export function createHybridConfigFromPreset(
   presetName: PresetName,
-  overrides: Partial<Pick<HybridStoreConfig, 'mongoUrl' | 'mongoDatabase' | 'mongoCollection' | 'redisUrl' | 'masterKey'>>,
+  overrides: Partial<
+    Pick<
+      HybridStoreConfig,
+      'mongoUrl' | 'mongoDatabase' | 'mongoCollection' | 'redisUrl' | 'masterKey'
+    >
+  >,
 ): HybridStoreConfig {
   const preset = PRESETS[presetName];
 

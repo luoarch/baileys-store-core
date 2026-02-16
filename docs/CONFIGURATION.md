@@ -31,15 +31,15 @@ O `@baileys-store/core` usa **Zod** para validação de configuração em tempo 
 ```typescript
 interface HybridStoreConfig {
   // Conexões
-  mongoUrl: string;              // MongoDB connection string
-  mongoDatabase: string;         // Nome do banco de dados
-  mongoCollection: string;       // Nome da coleção
-  redisUrl?: string;             // Redis connection string (opcional)
+  mongoUrl: string; // MongoDB connection string
+  mongoDatabase: string; // Nome do banco de dados
+  mongoCollection: string; // Nome da coleção
+  redisUrl?: string; // Redis connection string (opcional)
 
   // Configurações
-  ttl: TtlConfig;                // Time-to-live
-  resilience: ResilienceConfig;  // Retry e timeouts
-  security: SecurityConfig;      // Criptografia
+  ttl: TtlConfig; // Time-to-live
+  resilience: ResilienceConfig; // Retry e timeouts
+  security: SecurityConfig; // Criptografia
   observability: ObservabilityConfig; // Métricas
 }
 ```
@@ -48,14 +48,15 @@ interface HybridStoreConfig {
 
 ```typescript
 interface TtlConfig {
-  defaultTtl: number;    // TTL padrão (segundos), min: 1
-  credsTtl: number;      // TTL para credenciais (segundos), min: 1
-  keysTtl: number;       // TTL para chaves (segundos), min: 1
-  lockTtl: number;       // TTL para locks distribuídos (segundos), min: 1
+  defaultTtl: number; // TTL padrão (segundos), min: 1
+  credsTtl: number; // TTL para credenciais (segundos), min: 1
+  keysTtl: number; // TTL para chaves (segundos), min: 1
+  lockTtl: number; // TTL para locks distribuídos (segundos), min: 1
 }
 ```
 
 **Valores recomendados:**
+
 - Development: `defaultTtl: 300` (5 minutos)
 - Production: `defaultTtl: 3600` (1 hora)
 - Testing: `defaultTtl: 30` (30 segundos)
@@ -64,14 +65,15 @@ interface TtlConfig {
 
 ```typescript
 interface ResilienceConfig {
-  operationTimeout: number;  // Timeout de operação (ms), 100-60000
-  maxRetries: number;        // Máximo de retries, 0-10
-  retryBaseDelay: number;    // Delay base para backoff (ms), >= 0
-  retryMultiplier: number;   // Multiplicador exponencial, >= 1
+  operationTimeout: number; // Timeout de operação (ms), 100-60000
+  maxRetries: number; // Máximo de retries, 0-10
+  retryBaseDelay: number; // Delay base para backoff (ms), >= 0
+  retryMultiplier: number; // Multiplicador exponencial, >= 1
 }
 ```
 
 **Valores recomendados:**
+
 - Development: `operationTimeout: 10000` (10s)
 - Production: `operationTimeout: 5000` (5s)
 - Testing: `operationTimeout: 2000` (2s)
@@ -80,17 +82,18 @@ interface ResilienceConfig {
 
 ```typescript
 interface SecurityConfig {
-  enableEncryption: boolean;           // Habilitar criptografia
-  enableCompression: boolean;          // Habilitar compressão
+  enableEncryption: boolean; // Habilitar criptografia
+  enableCompression: boolean; // Habilitar compressão
   encryptionAlgorithm: 'aes-256-gcm' | 'secretbox';
   compressionAlgorithm: 'snappy' | 'gzip' | 'lz4';
-  keyRotationDays: number;             // Rotação de chaves (dias), min: 1
-  enableDebugLogging: boolean;         // Debug logging
+  keyRotationDays: number; // Rotação de chaves (dias), min: 1
+  enableDebugLogging: boolean; // Debug logging
   environment: 'development' | 'production' | 'test';
 }
 ```
 
 **Recomendações:**
+
 - Production: `enableEncryption: true` com `masterKey`
 - Development: `enableEncryption: false` para debug
 - Key rotation: 90-180 dias para produção
@@ -99,10 +102,10 @@ interface SecurityConfig {
 
 ```typescript
 interface ObservabilityConfig {
-  enableMetrics: boolean;      // Métricas Prometheus
-  enableTracing: boolean;      // OpenTelemetry (futuro)
+  enableMetrics: boolean; // Métricas Prometheus
+  enableTracing: boolean; // OpenTelemetry (futuro)
   enableDetailedLogs: boolean; // Logs detalhados
-  metricsInterval: number;     // Intervalo de coleta (ms), min: 1000
+  metricsInterval: number; // Intervalo de coleta (ms), min: 1000
 }
 ```
 
@@ -126,6 +129,7 @@ const config = createHybridConfigFromPreset('DEVELOPMENT', {
 ```
 
 **Características:**
+
 - TTLs curtos (5 minutos) para desenvolvimento rápido
 - Timeouts longos (10s) para debug
 - Encryption desabilitado (facilita debug)
@@ -151,6 +155,7 @@ const config = createHybridConfigFromPreset('PRODUCTION', {
 ```
 
 **Características:**
+
 - TTLs otimizados (1 hora default, 7 dias para creds/keys)
 - Timeouts agressivos (5s)
 - Encryption obrigatório (AES-256-GCM)
@@ -175,6 +180,7 @@ const config = createHybridConfigFromPreset('TESTING', {
 ```
 
 **Características:**
+
 - TTLs curtíssimos (30 segundos)
 - Timeouts rápidos (2s) para falha rápida
 - Encryption desabilitado
@@ -190,13 +196,15 @@ const config = createHybridConfigFromPreset('TESTING', {
 ```typescript
 import { validateAndReportConfig } from '@baileys-store/core/validation';
 
-const config = { /* ... */ };
+const config = {
+  /* ... */
+};
 
 const report = validateAndReportConfig(config);
 
 if (!report.valid) {
   console.error('Configuração inválida:');
-  report.errors?.forEach(error => {
+  report.errors?.forEach((error) => {
     console.error(`- ${error.path}: ${error.message}`);
     if (error.suggestedFix) {
       console.error(`  Sugestão: ${error.suggestedFix}`);
@@ -217,13 +225,13 @@ console.log(`Performance Score: ${report.performanceScore}/100`);
 // Security Warnings
 if (report.securityWarnings?.length) {
   console.warn('Security Warnings:');
-  report.securityWarnings.forEach(warning => console.warn(`- ${warning}`));
+  report.securityWarnings.forEach((warning) => console.warn(`- ${warning}`));
 }
 
 // Optimization Warnings
 if (report.warnings?.length) {
   console.warn('Optimization Suggestions:');
-  report.warnings.forEach(warning => console.warn(`- ${warning}`));
+  report.warnings.forEach((warning) => console.warn(`- ${warning}`));
 }
 ```
 
@@ -317,6 +325,7 @@ const validatedConfig = result.data;
 **Causa:** Criptografia habilitada sem master key.
 
 **Solução:**
+
 ```bash
 # Gerar master key segura
 openssl rand -hex 32
@@ -335,11 +344,13 @@ const config = createHybridConfigFromPreset('PRODUCTION', {
 ### Performance Score Baixo (< 70)
 
 **Causas comuns:**
+
 - TTLs muito curtos (< 300s)
 - Retries excessivos (> 5)
 - Compression desabilitada em produção
 
 **Soluções:**
+
 ```typescript
 const config = {
   ttl: {
@@ -359,6 +370,7 @@ const config = {
 **Causa:** Rotação de chave configurada para mais de 365 dias.
 
 **Solução:**
+
 ```typescript
 security: {
   keyRotationDays: 90, // Reduzir para 90 dias
@@ -370,6 +382,7 @@ security: {
 **Causa:** Timeout configurado acima de 60 segundos.
 
 **Solução:**
+
 ```typescript
 resilience: {
   operationTimeout: 5000, // Reduzir para 5 segundos
@@ -382,4 +395,3 @@ resilience: {
 - [Error Codes](./ERROR_CODES.md)
 - [Architecture Decisions](../ARCHITECTURE.md)
 - [Performance Benchmarks](../PAPER.md)
-

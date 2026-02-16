@@ -71,10 +71,7 @@ export {
   ConfigPresetSchema,
 } from './validation/index.js';
 
-export type {
-  ValidationReport,
-  ValidationError,
-} from './validation/index.js';
+export type { ValidationReport, ValidationError } from './validation/index.js';
 
 // Nota: Configs específicos são exportados pelos respectivos módulos
 // RedisStoreConfig → @baileys-store/core/redis
@@ -156,16 +153,8 @@ export {
 export type { ExecutionContext } from './context/execution-context.js';
 
 // ========== Health Checks ==========
-export {
-  performHealthCheck,
-  isReady,
-  isLive,
-} from './health/index.js';
-export type {
-  ComponentHealth,
-  HealthStatus,
-  HealthCheckConfig,
-} from './health/index.js';
+export { performHealthCheck, isReady, isLive } from './health/index.js';
+export type { ComponentHealth, HealthStatus, HealthCheckConfig } from './health/index.js';
 
 // ========== Errors ==========
 export {

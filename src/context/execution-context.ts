@@ -1,12 +1,12 @@
 /**
  * Execution Context - Context propagation using AsyncLocalStorage
- * 
+ *
  * Provides automatic context propagation for:
  * - Correlation IDs
  * - Request IDs
  * - User IDs
  * - Session IDs
- * 
+ *
  * Ensures context is available across async boundaries.
  */
 
@@ -35,10 +35,7 @@ export function getContext(): ExecutionContext | undefined {
 /**
  * Run function with execution context
  */
-export function withContext<T>(
-  context: Partial<ExecutionContext>,
-  fn: () => T
-): T {
+export function withContext<T>(context: Partial<ExecutionContext>, fn: () => T): T {
   const fullContext: ExecutionContext = {
     correlationId: context.correlationId ?? randomUUID(),
     requestId: context.requestId ?? generateRequestId(),
@@ -46,7 +43,7 @@ export function withContext<T>(
     environment: context.environment ?? 'production',
     ...context,
   };
-  
+
   return executionContext.run(fullContext, fn);
 }
 
@@ -88,11 +85,11 @@ export function getOperationDuration(): number | undefined {
 
 /**
  * Run function with specific correlation ID
- * 
+ *
  * @param correlationId - Correlation ID to use
  * @param fn - Function to execute
  * @returns Result of function execution
- * 
+ *
  * @example
  * ```typescript
  * const result = await withCorrelationId('req-123', async () => {
@@ -102,23 +99,20 @@ export function getOperationDuration(): number | undefined {
  * });
  * ```
  */
-export function withCorrelationId<T>(
-  correlationId: string,
-  fn: () => T
-): T {
+export function withCorrelationId<T>(correlationId: string, fn: () => T): T {
   return withContext({ correlationId }, fn);
 }
 
 /**
  * Set metadata in current context
- * 
+ *
  * @param metadata - Key-value pairs to add to context
- * 
+ *
  * @example
  * ```typescript
- * setContextMetadata({ 
+ * setContextMetadata({
  *   userId: 'user-123',
- *   sessionId: 'session-456' 
+ *   sessionId: 'session-456'
  * });
  * ```
  */
@@ -134,10 +128,10 @@ export function setContextMetadata(metadata: Record<string, string>): void {
 
 /**
  * Get metadata from current context
- * 
+ *
  * @param key - Metadata key
  * @returns Metadata value or undefined
- * 
+ *
  * @example
  * ```typescript
  * const userId = getContextMetadata('userId');
@@ -150,7 +144,7 @@ export function getContextMetadata(key: string): string | undefined {
 
 /**
  * Check if current context has correlation ID
- * 
+ *
  * @returns Whether correlation ID is present
  */
 export function hasCorrelationId(): boolean {

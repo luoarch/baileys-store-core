@@ -5,7 +5,14 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { DEVELOPMENT, PRODUCTION, TESTING, validatePreset, getPreset, PRESETS } from '../../config/presets.js';
+import {
+  DEVELOPMENT,
+  PRODUCTION,
+  TESTING,
+  validatePreset,
+  getPreset,
+  PRESETS,
+} from '../../config/presets.js';
 
 describe('Config Presets', () => {
   describe('DEVELOPMENT preset', () => {
@@ -199,7 +206,9 @@ describe('Config Presets', () => {
         },
       };
       const errors = validatePreset(validPreset);
-      expect(errors).not.toContain('keyRotationDays must be at least 1 day when encryption is enabled');
+      expect(errors).not.toContain(
+        'keyRotationDays must be at least 1 day when encryption is enabled',
+      );
     });
   });
 });

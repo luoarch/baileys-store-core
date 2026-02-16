@@ -1270,6 +1270,49 @@ const config = {
 
 ---
 
+## 📅 Fase 6: Best Practices & Production Hardening (Semana 9-10) ✅ **CONCLUÍDA**
+
+### 6.1 Redis Pipeline Atomicity 🟢 ⭐⭐⭐
+
+**Status:** ✅ **Concluído**
+
+- ✅ Substituído `Promise.all()` por Redis pipeline em `set()`
+- ✅ Serialização async antes do pipeline
+- ✅ Verificação de erros por operação
+
+### 6.2 LRU Mutex Eviction 🟢 ⭐⭐⭐
+
+**Status:** ✅ **Concluído**
+
+- ✅ Adicionado `lru-cache` dependency
+- ✅ `writeMutexes` agora usa LRUCache (max 10k, TTL 30min)
+- ✅ Memory leak corrigido
+
+### 6.3 TOCTOU Fix in Cache Warming 🟢 ⭐⭐⭐
+
+**Status:** ✅ **Concluído**
+
+- ✅ Implementado Redis WATCH para warmCache
+- ✅ Version check antes de sobrescrever cache
+- ✅ UNWATCH em caso de conflito
+
+### 6.4 Outbox Deduplication 🟢 ⭐⭐⭐
+
+**Status:** ✅ **Concluído**
+
+- ✅ HSET → HSETNX para idempotência
+- ✅ Adicionado `p-limit` para concurrency control
+- ✅ Dead letter queue para failed entries
+
+### 6.5 MongoDB Version Checking 🟢 ⭐⭐
+
+**Status:** ✅ **Concluído**
+
+- ✅ Re-habilitado optimistic locking verification
+- ✅ `VersionMismatchError` thrown quando version diverge
+
+---
+
 ## 🆕 Seção: Mutation Testing (Fase 6.5) ✅ **CONCLUÍDO**
 
 ### 6.3 Implementar Mutation Testing 🟡 ⭐⭐⭐

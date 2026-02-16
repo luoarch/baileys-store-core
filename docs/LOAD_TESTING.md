@@ -13,11 +13,13 @@ Este documento descreve como executar testes de carga para validar a escalabilid
 ## Instalação do k6
 
 ### macOS
+
 ```bash
 brew install k6
 ```
 
 ### Linux
+
 ```bash
 sudo gpg -k
 sudo gpg --no-default-keyring --keyring /usr/share/keyrings/k6-archive-keyring.gpg --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys C5AD17C747E3415A3642D57D77C6C491D6AC1D69
@@ -27,11 +29,13 @@ sudo apt-get install k6
 ```
 
 ### Windows
+
 ```powershell
 choco install k6
 ```
 
 ### Docker
+
 ```bash
 docker pull grafana/k6
 ```
@@ -91,13 +95,13 @@ k6 run --vus 1000 --duration 30s k6-load-test.js
 
 ### Métricas Principais
 
-| Métrica | Descrição | Target |
-|---------|-----------|--------|
-| **http_req_duration** | Latência total das requisições | p95 < 200ms |
-| **http_reqs** | Taxa de requisições por segundo | > 1000 req/s |
-| **errors** | Taxa de erros | < 1% |
-| **vus** | Virtual Users (usuários simultâneos) | 0 a 200 |
-| **iteration_duration** | Tempo para completar uma iteração | < 2s |
+| Métrica                | Descrição                            | Target       |
+| ---------------------- | ------------------------------------ | ------------ |
+| **http_req_duration**  | Latência total das requisições       | p95 < 200ms  |
+| **http_reqs**          | Taxa de requisições por segundo      | > 1000 req/s |
+| **errors**             | Taxa de erros                        | < 1%         |
+| **vus**                | Virtual Users (usuários simultâneos) | 0 a 200      |
+| **iteration_duration** | Tempo para completar uma iteração    | < 2s         |
 
 ### Resultado de Exemplo
 
@@ -132,6 +136,7 @@ Max VUs: 200
 Testa comportamento sob carga crescente gradualmente.
 
 **Duração**: ~8 minutos
+
 - 0 → 50 VUs em 30s
 - 50 VUs por 2min
 - 50 → 100 VUs em 30s
@@ -145,6 +150,7 @@ Testa comportamento sob carga crescente gradualmente.
 Testa comportamento sob carga súbita.
 
 **Duração**: ~1 minuto
+
 ```bash
 k6 run --vus 0 --stage 0s:0,10s:200,40s:200,50s:0 k6-load-test.js
 ```
@@ -154,6 +160,7 @@ k6 run --vus 0 --stage 0s:0,10s:200,40s:200,50s:0 k6-load-test.js
 Testa limites do sistema.
 
 **Duração**: ~5 minutos
+
 ```bash
 k6 run --vus 0 --stage 0s:0,30s:500,270s:500,300s:0 k6-load-test.js
 ```
@@ -194,6 +201,7 @@ mongosh --eval "db.currentOp()"
 **Causa**: Servidor não está rodando ou porta incorreta.
 
 **Solução**:
+
 ```bash
 # Verificar se servidor está ativo
 curl http://localhost:3000/health
@@ -207,6 +215,7 @@ tsx examples/production-setup.ts
 **Causa**: Redis ou MongoDB sob carga.
 
 **Solução**:
+
 1. Verificar recursos disponíveis
 2. Aumentar timeouts no config
 3. Verificar conexões ativas do Redis/MongoDB
@@ -217,6 +226,7 @@ tsx examples/production-setup.ts
 **Causa**: Sistema sob stress excessivo ou configuração incorreta.
 
 **Solução**:
+
 1. Verificar logs do servidor
 2. Reduzir carga inicial (menos VUs)
 3. Aumentar timeouts
@@ -227,6 +237,7 @@ tsx examples/production-setup.ts
 **Causa**: Conexões não fechadas ou cache crescendo indefinidamente.
 
 **Solução**:
+
 1. Monitorar uso de memória ao longo do tempo
 2. Verificar TTLs configurados
 3. Verificar cleanup de sessões expiradas

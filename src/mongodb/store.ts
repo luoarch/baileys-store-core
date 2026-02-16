@@ -160,11 +160,15 @@ export class MongoAuthStore implements AuthStore {
         action: 'mongo_connect_success',
       });
     } catch (error) {
-      this.logger.error('Failed to connect to MongoDB', error instanceof Error ? error : undefined, {
-        database: this.config.databaseName,
-        duration: Date.now() - startTime,
-        action: 'mongo_connect_error',
-      });
+      this.logger.error(
+        'Failed to connect to MongoDB',
+        error instanceof Error ? error : undefined,
+        {
+          database: this.config.databaseName,
+          duration: Date.now() - startTime,
+          action: 'mongo_connect_error',
+        },
+      );
       throw new StorageError(
         'Failed to connect to MongoDB',
         'mongo',
@@ -185,9 +189,13 @@ export class MongoAuthStore implements AuthStore {
         action: 'mongo_store_disconnected',
       });
     } catch (error) {
-      this.logger.error('Error disconnecting from MongoDB', error instanceof Error ? error : undefined, {
-        action: 'mongo_disconnect_error',
-      });
+      this.logger.error(
+        'Error disconnecting from MongoDB',
+        error instanceof Error ? error : undefined,
+        {
+          action: 'mongo_disconnect_error',
+        },
+      );
     }
   }
 
@@ -403,10 +411,14 @@ export class MongoAuthStore implements AuthStore {
         );
       }
 
-      // Check version mismatch - temporarily disabled for tests
-      // Version checking disabled to avoid test conflicts
-      // Suppress unused variable warning
-      void result;
+      // Verify optimistic locking succeeded
+      if (result && expectedVersion !== undefined) {
+        // If we expected a specific version but got a different one, it's a conflict
+        const actualVersion = result.version as number;
+        if (actualVersion !== newVersion) {
+          throw new VersionMismatchError(expectedVersion, actualVersion - 1);
+        }
+      }
 
       // Invalidate cache
       this.invalidateCache(docId);

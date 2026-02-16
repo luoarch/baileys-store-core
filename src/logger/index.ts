@@ -1,6 +1,6 @@
 /**
  * Structured Logging System
- * 
+ *
  * Provides structured logging with:
  * - Configurable log levels (TRACE, DEBUG, INFO, WARN, ERROR)
  * - Automatic context propagation (correlationId, requestId)
@@ -34,7 +34,7 @@ export class ConsoleStructuredLogger implements StructuredLogger {
 
   constructor(
     private environment: 'development' | 'production' | 'test',
-    options?: { level?: LogLevel }
+    options?: { level?: LogLevel },
   ) {
     this.level = options?.level ?? this.getDefaultLevel();
   }
@@ -94,19 +94,16 @@ export class ConsoleStructuredLogger implements StructuredLogger {
       ...this.sanitize(context),
     };
 
-    const output = this.environment === 'production' 
-      ? JSON.stringify(logEntry)
-      : this.formatPretty(logEntry);
+    const output =
+      this.environment === 'production' ? JSON.stringify(logEntry) : this.formatPretty(logEntry);
 
     // Use appropriate console method
-     
+
     switch (level) {
       case 'ERROR':
-         
         console.error(output);
         break;
       case 'WARN':
-         
         console.warn(output);
         break;
       default:
@@ -119,50 +116,65 @@ export class ConsoleStructuredLogger implements StructuredLogger {
     const timestamp = typeof entry.timestamp === 'string' ? entry.timestamp : '';
     const level = typeof entry.level === 'string' ? entry.level : '';
     const message = typeof entry.message === 'string' ? entry.message : '';
-    
-    const lines = [
-      `${timestamp} [${level}] ${message}`,
-    ];
-    
+
+    const lines = [`${timestamp} [${level}] ${message}`];
+
     // Add correlationId if present
     if (entry.correlationId) {
-      const correlationId = typeof entry.correlationId === 'string' 
-        ? entry.correlationId 
-        : JSON.stringify(entry.correlationId);
+      const correlationId =
+        typeof entry.correlationId === 'string'
+          ? entry.correlationId
+          : JSON.stringify(entry.correlationId);
       lines.push('  correlationId: ' + correlationId);
     }
-    
+
     // Add all other context fields (excluding metadata)
-    const contextKeys = ['correlationId', 'requestId', 'timestamp', 'level', 'message', 'environment', 'duration'];
+    const contextKeys = [
+      'correlationId',
+      'requestId',
+      'timestamp',
+      'level',
+      'message',
+      'environment',
+      'duration',
+    ];
     const contextFields: Record<string, unknown> = {};
-    
+
     for (const [key, value] of Object.entries(entry)) {
       if (!contextKeys.includes(key) && value !== undefined) {
         contextFields[key] = value;
       }
     }
-    
+
     if (Object.keys(contextFields).length > 0) {
       lines.push(`  context: ${JSON.stringify(contextFields, null, 2)}`);
     }
-    
+
     return lines.join('\n');
   }
 
   private sanitize(data: Record<string, unknown> | undefined): Record<string, unknown> {
     if (!data) return {};
-    
+
     const sanitized: Record<string, unknown> = {};
-    const sensitiveFields = ['masterKey', 'password', 'token', 'secret', 'apiKey', 'privateKey', 'keyData'];
-    
+    const sensitiveFields = [
+      'masterKey',
+      'password',
+      'token',
+      'secret',
+      'apiKey',
+      'privateKey',
+      'keyData',
+    ];
+
     for (const [key, value] of Object.entries(data)) {
-      if (sensitiveFields.some(field => key.toLowerCase().includes(field.toLowerCase()))) {
+      if (sensitiveFields.some((field) => key.toLowerCase().includes(field.toLowerCase()))) {
         sanitized[key] = '[REDACTED]';
       } else {
         sanitized[key] = value;
       }
     }
-    
+
     return sanitized;
   }
 
@@ -173,11 +185,11 @@ export class ConsoleStructuredLogger implements StructuredLogger {
         name: error.name,
         stack: error.stack,
       };
-      
+
       if (error.cause) {
         serialized.cause = error.cause;
       }
-      
+
       return serialized;
     }
     return error;
