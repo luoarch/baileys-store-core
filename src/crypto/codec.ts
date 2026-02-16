@@ -8,7 +8,7 @@
  * - Preserva tipos nativos (Date, Buffer, etc) via BufferJSON
  *
  * Compressão:
- * - Snappy (preferencial, requer @napi-rs/snappy)
+ * - Snappy (preferencial, requer snappy)
  * - Gzip (fallback, built-in Node.js)
  */
 
@@ -24,7 +24,7 @@ async function loadSnappyModule(): Promise<unknown> {
   if (snappyModule !== null) return snappyModule;
 
   try {
-    const module = await import('@napi-rs/snappy');
+    const module = await import('snappy');
     // ESM/CJS interop: use 'in' operator instead of ??
     snappyModule = 'default' in module ? module.default : module;
   } catch {
@@ -61,7 +61,7 @@ class GzipCompressor implements Compressor {
 }
 
 /**
- * Compressor Snappy (requer @napi-rs/snappy)
+ * Compressor Snappy (requer snappy)
  */
 class SnappyCompressor implements Compressor {
   name = 'snappy';

@@ -10,7 +10,7 @@ import { CompressionError } from '../../types/index.js';
 import type { SecurityConfig } from '../../types/index.js';
 
 // Mock do módulo Snappy
-vi.mock('@napi-rs/snappy', () => ({
+vi.mock('snappy', () => ({
   default: {
     compressSync: vi.fn((data: Buffer) => Buffer.from(`snappy:${data.toString()}`)),
     uncompressSync: vi.fn((data: Buffer) => {
@@ -164,7 +164,7 @@ describe('CodecService', () => {
       const testData = { message: 'Fallback test' };
 
       // Mock snappy para falhar na compressão
-      const mockSnappy = await import('@napi-rs/snappy');
+      const mockSnappy = await import('snappy');
       const originalCompress = mockSnappy.default.compressSync;
 
       // Mock para falhar
@@ -386,7 +386,7 @@ describe('CodecService', () => {
       const testData = { message: 'Fallback test' };
 
       // Mock snappy para não ter compressSync
-      const mockSnappy = await import('@napi-rs/snappy');
+      const mockSnappy = await import('snappy');
       const originalCompress = mockSnappy.default.compressSync;
 
       // Mock para não ter compressSync
@@ -414,7 +414,7 @@ describe('CodecService', () => {
       const testData = { message: 'Fallback test' };
 
       // Mock snappy para não ter uncompressSync
-      const mockSnappy = await import('@napi-rs/snappy');
+      const mockSnappy = await import('snappy');
       const originalUncompress = mockSnappy.default.uncompressSync;
 
       // Mock para não ter uncompressSync
@@ -442,7 +442,7 @@ describe('CodecService', () => {
       const testData = { message: 'Fallback test' };
 
       // Mock snappy para falhar na descompressão
-      const mockSnappy = await import('@napi-rs/snappy');
+      const mockSnappy = await import('snappy');
       const originalUncompress = mockSnappy.default.uncompressSync;
 
       // Mock para falhar na descompressão
@@ -568,7 +568,7 @@ describe('CodecService', () => {
 
     it('deve testar isAvailable() retornando true quando módulo está disponível', async () => {
       // Mock snappy para estar disponível
-      const mockSnappy = await import('@napi-rs/snappy');
+      const mockSnappy = await import('snappy');
       const originalModule = mockSnappy.default;
 
       // Garantir que o módulo está disponível
@@ -599,7 +599,7 @@ describe('CodecService', () => {
 
     it('deve testar isAvailable() retornando false quando módulo não está disponível', async () => {
       // Mock snappy para não estar disponível
-      const mockSnappy = await import('@napi-rs/snappy');
+      const mockSnappy = await import('snappy');
       const originalModule = mockSnappy.default;
 
       // Mock para retornar null (módulo não disponível)
@@ -627,7 +627,7 @@ describe('CodecService', () => {
       const testData = { message: 'Fallback test' };
 
       // Mock snappy para retornar null
-      const mockSnappy = await import('@napi-rs/snappy');
+      const mockSnappy = await import('snappy');
       const originalModule = mockSnappy.default;
 
       // Mock para retornar null
@@ -649,7 +649,7 @@ describe('CodecService', () => {
       const testData = { message: 'Fallback test' };
 
       // Mock snappy para retornar string (não-objeto)
-      const mockSnappy = await import('@napi-rs/snappy');
+      const mockSnappy = await import('snappy');
       const originalModule = mockSnappy.default;
 
       // Mock para retornar string

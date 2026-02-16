@@ -69,65 +69,54 @@ export const ResilienceConfigSchema = z.object({
 /**
  * Security Configuration Schema
  */
-export const SecurityConfigSchema = z.object({
-  enableEncryption: z
-    .boolean()
-    .describe('Enable encryption for stored data'),
+export const SecurityConfigSchema = z
+  .object({
+    enableEncryption: z.boolean().describe('Enable encryption for stored data'),
 
-  enableCompression: z
-    .boolean()
-    .describe('Enable compression for stored data'),
+    enableCompression: z.boolean().describe('Enable compression for stored data'),
 
-  encryptionAlgorithm: z
-    .enum(['aes-256-gcm', 'secretbox'], {
-      errorMap: () => ({ message: 'encryptionAlgorithm must be either "aes-256-gcm" or "secretbox"' }),
-    })
-    .describe('Encryption algorithm to use'),
+    encryptionAlgorithm: z
+      .enum(['aes-256-gcm', 'secretbox'], {
+        errorMap: () => ({
+          message: 'encryptionAlgorithm must be either "aes-256-gcm" or "secretbox"',
+        }),
+      })
+      .describe('Encryption algorithm to use'),
 
-  compressionAlgorithm: z
-    .enum(['snappy', 'gzip', 'lz4'], {
-      errorMap: () => ({ message: 'compressionAlgorithm must be "snappy", "gzip", or "lz4"' }),
-    })
-    .describe('Compression algorithm to use'),
+    compressionAlgorithm: z
+      .enum(['snappy', 'gzip', 'lz4'], {
+        errorMap: () => ({ message: 'compressionAlgorithm must be "snappy", "gzip", or "lz4"' }),
+      })
+      .describe('Compression algorithm to use'),
 
-  keyRotationDays: z
-    .number()
-    .int()
-    .min(1, 'keyRotationDays must be at least 1 day')
-    .describe('Key rotation interval (days)'),
+    keyRotationDays: z
+      .number()
+      .int()
+      .min(1, 'keyRotationDays must be at least 1 day')
+      .describe('Key rotation interval (days)'),
 
-  enableDebugLogging: z
-    .boolean()
-    .describe('Enable debug logging (for development only)'),
+    enableDebugLogging: z.boolean().describe('Enable debug logging (for development only)'),
 
-  environment: z
-    .enum(['development', 'production', 'test'], {
-      errorMap: () => ({ message: 'environment must be "development", "production", or "test"' }),
-    })
-    .describe('Deployment environment'),
-}).refine(
-  (data) => !data.enableEncryption || data.keyRotationDays >= 1,
-  {
+    environment: z
+      .enum(['development', 'production', 'test'], {
+        errorMap: () => ({ message: 'environment must be "development", "production", or "test"' }),
+      })
+      .describe('Deployment environment'),
+  })
+  .refine((data) => !data.enableEncryption || data.keyRotationDays >= 1, {
     message: 'keyRotationDays must be at least 1 day when encryption is enabled',
     path: ['keyRotationDays'],
-  },
-);
+  });
 
 /**
  * Observability Configuration Schema
  */
 export const ObservabilityConfigSchema = z.object({
-  enableMetrics: z
-    .boolean()
-    .describe('Enable Prometheus metrics'),
+  enableMetrics: z.boolean().describe('Enable Prometheus metrics'),
 
-  enableTracing: z
-    .boolean()
-    .describe('Enable distributed tracing (OpenTelemetry)'),
+  enableTracing: z.boolean().describe('Enable distributed tracing (OpenTelemetry)'),
 
-  enableDetailedLogs: z
-    .boolean()
-    .describe('Enable detailed structured logging'),
+  enableDetailedLogs: z.boolean().describe('Enable detailed structured logging'),
 
   metricsInterval: z
     .number()
@@ -139,66 +128,53 @@ export const ObservabilityConfigSchema = z.object({
 /**
  * Hybrid Store Configuration Schema
  */
-export const HybridStoreConfigSchema = z.object({
-  // Connection strings
-  redisUrl: z
-    .string()
-    .optional()
-    .describe('Redis connection URL'),
+export const HybridStoreConfigSchema = z
+  .object({
+    // Connection strings
+    redisUrl: z.string().optional().describe('Redis connection URL'),
 
-  mongoUrl: z
-    .string()
-    .min(1, 'mongoUrl is required')
-    .describe('MongoDB connection URL'),
+    mongoUrl: z.string().min(1, 'mongoUrl is required').describe('MongoDB connection URL'),
 
-  mongoDatabase: z
-    .string()
-    .min(1, 'mongoDatabase is required')
-    .describe('MongoDB database name'),
+    mongoDatabase: z.string().min(1, 'mongoDatabase is required').describe('MongoDB database name'),
 
-  mongoCollection: z
-    .string()
-    .min(1, 'mongoCollection is required')
-    .describe('MongoDB collection name'),
+    mongoCollection: z
+      .string()
+      .min(1, 'mongoCollection is required')
+      .describe('MongoDB collection name'),
 
-  // Configuration objects
-  ttl: TtlConfigSchema,
-  resilience: ResilienceConfigSchema,
-  security: SecurityConfigSchema,
-  observability: ObservabilityConfigSchema,
+    // Configuration objects
+    ttl: TtlConfigSchema,
+    resilience: ResilienceConfigSchema,
+    security: SecurityConfigSchema,
+    observability: ObservabilityConfigSchema,
 
-  // Optional fields
-  masterKey: z
-    .string()
-    .optional()
-    .describe('Master encryption key (64 hex characters)'),
+    // Optional fields
+    masterKey: z.string().optional().describe('Master encryption key (64 hex characters)'),
 
-  enableWriteBehind: z
-    .boolean()
-    .optional()
-    .describe('Enable write-behind pattern (async MongoDB writes)'),
+    enableWriteBehind: z
+      .boolean()
+      .optional()
+      .describe('Enable write-behind pattern (async MongoDB writes)'),
 
-  writeBehindFlushInterval: z
-    .number()
-    .int()
-    .min(100, 'writeBehindFlushInterval must be at least 100ms')
-    .optional()
-    .describe('Write-behind flush interval (milliseconds)'),
+    writeBehindFlushInterval: z
+      .number()
+      .int()
+      .min(100, 'writeBehindFlushInterval must be at least 100ms')
+      .optional()
+      .describe('Write-behind flush interval (milliseconds)'),
 
-  writeBehindQueueSize: z
-    .number()
-    .int()
-    .min(10, 'writeBehindQueueSize must be at least 10')
-    .max(10000, 'writeBehindQueueSize should not exceed 10000')
-    .optional()
-    .describe('Maximum size of write-behind queue'),
-}).refine(
-  (data) => !data.security.enableEncryption || !!data.masterKey,
-  {
+    writeBehindQueueSize: z
+      .number()
+      .int()
+      .min(10, 'writeBehindQueueSize must be at least 10')
+      .max(10000, 'writeBehindQueueSize should not exceed 10000')
+      .optional()
+      .describe('Maximum size of write-behind queue'),
+  })
+  .refine((data) => !data.security.enableEncryption || !!data.masterKey, {
     message: 'masterKey is required when encryption is enabled',
     path: ['masterKey'],
-  },
-);
+  });
 
 /**
  * Configuration Preset Schema
@@ -217,3 +193,27 @@ export type SecurityConfig = z.infer<typeof SecurityConfigSchema>;
 export type ObservabilityConfig = z.infer<typeof ObservabilityConfigSchema>;
 export type HybridStoreConfig = z.infer<typeof HybridStoreConfigSchema>;
 export type ConfigPreset = z.infer<typeof ConfigPresetSchema>;
+
+// ============================================
+// COMPILE-TIME DRIFT DETECTION
+// If these fail, types and schemas have diverged
+// ============================================
+import type {
+  TtlConfig as ITtlConfig,
+  ResilienceConfig as IResilienceConfig,
+  ObservabilityConfig as IObservabilityConfig,
+} from '../types/index.js';
+
+// Utility: fails compilation if T is not assignable to U
+type AssertExtends<T, U> = T extends U ? true : never;
+
+// These lines will cause TypeScript errors if schemas drift from interfaces
+// Note: Zod-inferred types should be assignable TO interfaces (schemas are stricter)
+const _ttlCheck: AssertExtends<TtlConfig, ITtlConfig> = true;
+const _resilienceCheck: AssertExtends<ResilienceConfig, IResilienceConfig> = true;
+const _observabilityCheck: AssertExtends<ObservabilityConfig, IObservabilityConfig> = true;
+
+// Suppress unused variable warnings
+void _ttlCheck;
+void _resilienceCheck;
+void _observabilityCheck;

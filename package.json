@@ -130,6 +130,10 @@
     "changelog": "conventional-changelog -p angular -i CHANGELOG.md -s",
     "presets:validate": "tsx scripts/validate-presets.ts",
     "coverage:check": "node scripts/check-coverage.js",
+    "lint:denylist": "tsx scripts/denylist-scan.ts",
+    "test:contract": "vitest run src/__tests__/contracts/",
+    "test:core-flow": "vitest run src/__tests__/e2e/core-flow.test.ts",
+    "ci:quality": "yarn typecheck && yarn lint && yarn lint:denylist && yarn format:check",
     "prepublishOnly": "yarn clean && yarn build && yarn test && yarn lint && npm pack --dry-run",
     "prepare": "node -e \"const fs = require('fs'); if (fs.existsSync('.git')) { require('child_process').execSync('npx husky', { stdio: 'inherit' }) }\""
   },
@@ -177,7 +181,7 @@
   },
   "homepage": "https://github.com/luoarch/baileys-store-core#readme",
   "peerDependencies": {
-    "@whiskeysockets/baileys": ">=7.0.0-rc.6",
+    "@whiskeysockets/baileys": ">=7.0.0-rc.9",
     "ioredis": "^5.8.2",
     "mongodb": "^6.20.0"
   },
@@ -195,12 +199,6 @@
       "optional": true
     }
   },
-  "overrides": {
-    "@napi-rs/snappy": "7.2.2"
-  },
-  "resolutions": {
-    "@napi-rs/snappy": "7.2.2"
-  },
   "dependencies": {
     "@hapi/boom": "^10.0.1",
     "async-mutex": "^0.5.0",
@@ -210,6 +208,9 @@
     "zod": "^3.22.4"
   },
   "devDependencies": {
+    "ioredis": "^5.8.2",
+    "mongodb": "^6.20.0",
+    "snappy": "^7.2.2",
     "@commitlint/cli": "^20.0.0",
     "@commitlint/config-conventional": "^20.0.0",
     "@eslint/js": "^9.38.0",
@@ -222,12 +223,12 @@
     "@testcontainers/mongodb": "^11.7.2",
     "@testcontainers/redis": "^11.7.2",
     "@types/express": "^5.0.3",
-    "@types/ioredis-mock": "^8.0.0",
+    "@types/ioredis-mock": "^8.2.6",
     "@types/node": "^24.9.1",
     "@types/opossum": "^8.1.9",
     "@vitest/coverage-v8": "^4.0.3",
     "@vitest/ui": "^4.0.3",
-    "@whiskeysockets/baileys": "7.0.0-rc.6",
+    "@whiskeysockets/baileys": "7.0.0-rc.9",
     "bibtex-tidy": "^1.14.0",
     "bullmq": "^5.61.2",
     "dotenv": "^17.2.3",

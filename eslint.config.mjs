@@ -167,6 +167,7 @@ export default tseslint.config(
     files: ['scripts/**/*.ts', 'scripts/**/*.js', 'test-scripts/**/*.ts'],
     extends: [tseslint.configs.disableTypeChecked],
     languageOptions: {
+      parser: tseslint.parser,
       globals: {
         console: 'readonly',
         process: 'readonly',
@@ -176,7 +177,6 @@ export default tseslint.config(
       },
       parserOptions: {
         projectService: false,
-        parser: '@typescript-eslint/parser',
         ecmaVersion: 'latest',
         sourceType: 'module',
       },
