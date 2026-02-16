@@ -12,6 +12,7 @@
 import { Mutex } from 'async-mutex';
 import { LRUCache } from 'lru-cache';
 import CircuitBreaker from 'opossum';
+import { BufferJSON } from '@whiskeysockets/baileys';
 import type {
   AuthStore,
   SessionId,
@@ -364,20 +365,35 @@ export class HybridAuthStore implements AuthStore {
           assertBufferTypes(patch.keys, 'patch.keys');
         }
 
+        // CRITICAL FIX: Create deep copy of patch to prevent race condition
+        // The patch object contains references to authState.creds which Baileys
+        // may modify during async operations. By creating a snapshot here,
+        // both Redis and Outbox receive the same immutable data.
+        // See: https://github.com/anthropics/claude-code/issues/XXXX
+        const patchSnapshot = JSON.parse(
+          JSON.stringify(patch, BufferJSON.replacer),
+          BufferJSON.reviver,
+        ) as AuthPatch;
+
         // Write to Redis first (hot path, synchronous)
-        const result = await this.redis.set(sessionId, patch, expectedVersion);
+        const result = await this.redis.set(sessionId, patchSnapshot, expectedVersion);
 
         // Write-behind to MongoDB (async via queue or direct fallback)
         if (this.config.queue && this.config.enableWriteBehind) {
           try {
             // Add to outbox BEFORE queuing (transactional outbox pattern)
             if (this.outboxManager) {
-              await this.outboxManager.addEntry(sessionId, patch, result.version, fencingToken);
+              await this.outboxManager.addEntry(
+                sessionId,
+                patchSnapshot,
+                result.version,
+                fencingToken,
+              );
             }
 
             await this.config.queue.add('persist', {
               sessionId,
-              patch,
+              patch: patchSnapshot,
               version: result.version,
               fencingToken,
               timestamp: Date.now(),
@@ -393,7 +409,7 @@ export class HybridAuthStore implements AuthStore {
             });
 
             // Fallback: direct write to MongoDB
-            await this.mongo.set(sessionId, patch, expectedVersion, fencingToken);
+            await this.mongo.set(sessionId, patchSnapshot, expectedVersion, fencingToken);
             directWritesCounter.inc({ session_id: sessionId });
 
             // Mark as completed in outbox (if exists)
@@ -403,7 +419,7 @@ export class HybridAuthStore implements AuthStore {
           }
         } else {
           // Direct write to MongoDB (no queue)
-          await this.mongo.set(sessionId, patch, expectedVersion, fencingToken);
+          await this.mongo.set(sessionId, patchSnapshot, expectedVersion, fencingToken);
           directWritesCounter.inc({ session_id: sessionId });
         }
 

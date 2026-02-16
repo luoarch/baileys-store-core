@@ -232,14 +232,19 @@ export class RedisAuthStore implements AuthStore {
         this.getField(sessionId, 'keys'),
       ]);
 
-      if (!creds || !keys) {
+      // creds is required, but keys can be missing (will use empty defaults)
+      if (!creds) {
         return null;
       }
 
+      // Use empty defaults for keys if not present
+      // This allows credentials to be loaded even before any keys are saved
+      const keysData = keys ?? { keys: {}, version: 1, updatedAt: new Date() };
+
       const snapshot: AuthSnapshot = {
         creds: creds.creds,
-        keys: keys.keys,
-        appState: keys.appState,
+        keys: keysData.keys,
+        appState: keysData.appState,
       };
 
       return {
