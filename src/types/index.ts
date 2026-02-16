@@ -53,6 +53,23 @@ export interface VersionedResult {
  * Main storage interface (Strategy Pattern)
  * All adapters (Redis, MongoDB, Hybrid) implement this interface
  */
+/**
+ * Batch update entry
+ */
+export interface BatchUpdate {
+  sessionId: SessionId;
+  patch: AuthPatch;
+  expectedVersion?: number;
+}
+
+/**
+ * Batch result with errors
+ */
+export interface BatchResult<T> {
+  successful: Map<SessionId, T>;
+  failed: Map<SessionId, Error>;
+}
+
 export interface AuthStore {
   /**
    * Get complete snapshot
@@ -91,6 +108,24 @@ export interface AuthStore {
    * Health check
    */
   isHealthy(): Promise<boolean>;
+
+  /**
+   * Batch get multiple snapshots
+   * @returns Map of sessionId -> snapshot (or null if not found)
+   */
+  batchGet?(sessionIds: SessionId[]): Promise<Map<SessionId, Versioned<AuthSnapshot> | null>>;
+
+  /**
+   * Batch set multiple snapshots
+   * @returns Batch result with successful and failed operations
+   */
+  batchSet?(updates: BatchUpdate[]): Promise<BatchResult<VersionedResult>>;
+
+  /**
+   * Batch delete multiple snapshots
+   * @returns Batch result with successful and failed operations
+   */
+  batchDelete?(sessionIds: SessionId[]): Promise<BatchResult<void>>;
 }
 
 /**
@@ -164,7 +199,8 @@ export class NullLogger implements Logger {
 }
 
 /**
- * Console logger implementation
+ * Console logger implementation (legacy)
+ * @deprecated Use StructuredLogger from @baileys-store/core/logger instead
  */
 export class ConsoleLogger implements Logger {
   debug(msg: string, data?: Record<string, unknown>): void {
@@ -181,6 +217,15 @@ export class ConsoleLogger implements Logger {
     console.error(msg, data ?? '');
   }
 }
+
+// Re-export StructuredLogger from logger module
+export {
+  ConsoleStructuredLogger,
+  NullLogger as NullLoggerStructured,
+  LogLevel,
+  type StructuredLogger,
+  type LogContext,
+} from '../logger/index.js';
 
 /**
  * Security configuration

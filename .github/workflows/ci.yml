@@ -13,7 +13,7 @@ jobs:
 
     strategy:
       matrix:
-        node: ['22.x', '23.x']
+        node: ['22.x', '24.x']
 
     services:
       redis:
@@ -38,7 +38,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Setup Node.js ${{ matrix.node }}
         uses: actions/setup-node@v6
@@ -54,6 +54,9 @@ jobs:
 
       - name: Lint
         run: yarn lint
+
+      - name: Denylist Scan
+        run: yarn lint:denylist
 
       - name: Build
         run: yarn build
@@ -77,6 +80,12 @@ jobs:
         run: yarn test:coverage
         if: matrix.node == '22.x'
 
+      - name: Enforce Coverage Thresholds
+        if: matrix.node == '22.x'
+        run: |
+          yarn coverage:check
+        continue-on-error: false
+
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v5
         if: matrix.node == '22.x'
@@ -84,6 +93,11 @@ jobs:
           files: ./coverage/lcov.info
           flags: unittests
           name: codecov-umbrella
+
+      - name: Run Mutation Tests
+        if: matrix.node == '22.x'
+        run: yarn test:mutation
+        continue-on-error: true
 
       - name: Security audit
         run: npm audit --production --audit-level=high
@@ -94,7 +108,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - uses: actions/setup-node@v6
         with:
           node-version: '22.x'
@@ -102,4 +116,27 @@ jobs:
 
       - run: yarn install --frozen-lockfile
       - run: yarn lint
+      - run: yarn lint:denylist
       - run: yarn format:check
+
+  contract-tests:
+    name: Contract Tests
+    runs-on: ubuntu-latest
+    needs: [test]
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '22.x'
+          cache: 'yarn'
+
+      - run: yarn install --frozen-lockfile
+      - run: yarn build
+
+      - name: Contract Tests (Fresh DB via Testcontainers)
+        run: yarn test:contract
+
+      - name: Golden Core Flow
+        run: yarn test:core-flow

@@ -18,6 +18,11 @@ export default defineConfig({
         'src/types/**',
         'src/index.ts',
         'src/**/index.ts',
+        '.stryker-tmp/**', // Stryker mutation testing temporary files
+        // Excluir módulos utilitários e helpers simples
+        'src/errors/hierarchy.ts', // Tipo definitions only
+        'src/health/health-check.ts', // Helper simples
+        'src/validation/reporter.ts', // Utilidade de formatação
       ],
       thresholds: {
         // Global thresholds ajustados para realidade

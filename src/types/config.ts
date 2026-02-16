@@ -4,7 +4,13 @@
  * Configuration types for Redis, MongoDB and Hybrid stores
  */
 
-import type { TtlConfig, ResilienceConfig, ObservabilityConfig, SecurityConfig } from './index.js';
+import type {
+  TtlConfig,
+  ResilienceConfig,
+  ObservabilityConfig,
+  SecurityConfig,
+  StructuredLogger,
+} from './index.js';
 import type { QueueAdapter } from './queue.js';
 
 /**
@@ -81,6 +87,8 @@ export interface HybridStoreConfig {
   writeBehindQueueSize?: number;
   /** Master key for encryption (64 hex chars) */
   masterKey?: string;
+  /** Optional structured logger */
+  logger?: StructuredLogger;
 }
 
 /**

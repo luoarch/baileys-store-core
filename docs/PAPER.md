@@ -15,7 +15,7 @@
 
 **Methods:** We present @baileys-store/core, a hybrid architecture combining Redis (hot cache) and MongoDB (cold storage) with Transactional Outbox Pattern, Circuit Breaker resilience, and mutex-based concurrency control.
 
-**Results:** The library achieved < 5ms read latency for cached data, 99.9% availability with circuit breaker protection, zero data loss through optimistic locking, and enhanced cryptographic security with configurable logging and input validation, validated with 52 tests and real WhatsApp connections.
+**Results:** The library achieved < 5ms read latency for cached data, 99.9% availability with circuit breaker protection, zero data loss through optimistic locking, and enhanced cryptographic security with configurable logging and input validation, validated with 652 tests and real WhatsApp connections.
 
 **Conclusion:** @baileys-store/core provides production-grade authentication state management for Baileys v7.0+, addressing critical serialization and scalability issues present in existing solutions.
 
@@ -45,7 +45,7 @@ However, the default file-based authentication (`useMultiFileAuthState`) suffers
 Existing solutions (`baileys-redis-auth`, `mongo-baileys`) have critical limitations:
 
 - **Key overwriting bug**: App-state-sync-keys are replaced instead of merged incrementally
-- **Stale maintenance**: Last update 11+ months ago, incompatible with v7.0
+- **Limited architecture**: Redis-only design lacks hybrid storage, circuit breaker, and outbox pattern
 - **No dual-write safety**: Redis and MongoDB can diverge, causing data inconsistency
 - **Limited resilience**: No circuit breaker, outbox pattern, or graceful degradation
 
@@ -58,7 +58,7 @@ This work presents:
 3. **Transactional Outbox Pattern** ensuring dual-write consistency
 4. **Circuit Breaker integration** providing graceful MongoDB degradation
 5. **Thread-safe Prometheus metrics** for production observability
-6. **Comprehensive test suite** (52 tests: unit + integration + E2E)
+6. **Comprehensive test suite** (652 tests: unit + integration + E2E)
 
 ---
 
@@ -468,7 +468,7 @@ export type TypedAuthenticationCreds = Omit<
 
 **Mitigation Strategies:**
 
-- Extensive test suite (52 tests) reduces internal validity risks
+- Extensive test suite (652 tests) reduces internal validity risks
 - Real WhatsApp connection validation increases external validity
 - Configuration options allow tuning for specific deployment scenarios
 
@@ -476,17 +476,17 @@ export type TypedAuthenticationCreds = Omit<
 
 **Table 2: Comparison with Alternatives**
 
-| Feature            | baileys-redis-auth | mongo-baileys | @baileys-store/core                    |
-| ------------------ | ------------------ | ------------- | -------------------------------------- |
-| Baileys v7.0       | ❌ No              | ❌ No         | ✅ Yes                                 |
-| Key Merging Bug    | ❌ Overwrites      | N/A           | ✅ Fixed                               |
-| Dual Storage       | ❌ No              | ❌ No         | ✅ Yes (Hybrid)                        |
-| Circuit Breaker    | ❌ No              | ❌ No         | ✅ Yes (Opossum)                       |
-| Outbox Pattern     | ❌ No              | ❌ No         | ✅ Yes                                 |
-| Prometheus Metrics | ❌ No              | ❌ No         | ✅ Yes (13 metrics)                    |
-| Type Safety        | ⚠️ Partial         | ⚠️ Partial    | ✅ Strong (TypedKeyPair)               |
-| Tests              | ❌ None            | ❌ None       | ✅ 52 tests (unit + integration + E2E) |
-| Production Ready   | ❌ No              | ❌ No         | ✅ Yes                                 |
+| Feature            | baileys-redis-auth | mongo-baileys | @baileys-store/core                     |
+| ------------------ | ------------------ | ------------- | --------------------------------------- |
+| Baileys v7.0       | ✅ Yes (v2.0.0)    | ❌ No         | ✅ Yes                                  |
+| Key Merging Bug    | ❌ Overwrites      | N/A           | ✅ Fixed                                |
+| Dual Storage       | ❌ No              | ❌ No         | ✅ Yes (Hybrid)                         |
+| Circuit Breaker    | ❌ No              | ❌ No         | ✅ Yes (Opossum)                        |
+| Outbox Pattern     | ❌ No              | ❌ No         | ✅ Yes                                  |
+| Prometheus Metrics | ❌ No              | ❌ No         | ✅ Yes (13 metrics)                     |
+| Type Safety        | ⚠️ Partial         | ⚠️ Partial    | ✅ Strong (TypedKeyPair)                |
+| Tests              | ❌ None            | ❌ None       | ✅ 652 tests (unit + integration + E2E) |
+| Production Ready   | ❌ No              | ❌ No         | ✅ Yes                                  |
 
 ---
 
@@ -494,9 +494,9 @@ export type TypedAuthenticationCreds = Omit<
 
 `@baileys-store/core` provides a robust, production-grade solution for WhatsApp authentication state management using Baileys v7.0+. Through careful engineering of concurrency control, fault tolerance, and observability, we achieved enterprise-level reliability while maintaining simplicity for developers. The library is fully open-source (MIT), well-documented, and validated with real WhatsApp connections.
 
-**Availability:** https://www.npmjs.com/package/@baileys-store/core  
-**Source Code:** https://github.com/luoarch/baileys-store-core  
-**DOI:** [Pending Zenodo registration]
+**Availability:** https://www.npmjs.com/package/@luoarch/baileys-store-core
+**Source Code:** https://github.com/luoarch/baileys-store-core
+**DOI:** [10.5281/zenodo.18659706](https://doi.org/10.5281/zenodo.18659706)
 
 ---
 
@@ -615,8 +615,8 @@ If you use this library in academic work, please cite:
   publisher = {GitHub},
   journal = {GitHub repository},
   howpublished = {\url{https://github.com/[username]/baileys-store}},
-  version = {1.0.0},
-  doi = {[Pending]}
+  version = {1.0.0-rc.4},
+  doi = {10.5281/zenodo.18659706}
 }
 ```
 

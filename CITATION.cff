@@ -1,13 +1,14 @@
 cff-version: 1.2.0
-message: "If you use this software, please cite it as below."
+message: 'If you use this software, please cite it as below.'
 type: software
-title: "@luoarch/baileys-store-core: Production-Grade Authentication State Management for Baileys v7.0+"
-version: 1.0.0-rc.1
-date-released: 2025-10-23
+title: '@luoarch/baileys-store-core: Production-Grade Authentication State Management for Baileys v7.0+'
+version: 1.0.0-rc.5
+doi: 10.5281/zenodo.18659706
+date-released: 2026-02-16
 authors:
-  - family-names: "Moraes"
-    given-names: "Lucas"
-    email: "luoarch@proton.me"
+  - family-names: 'Moraes'
+    given-names: 'Lucas'
+    email: 'luoarch@proton.me'
 keywords:
   - WhatsApp
   - Baileys
@@ -18,39 +19,43 @@ keywords:
   - Circuit Breaker
   - Transactional Outbox
   - TypeScript
+  - Rate Limiting
+  - Session Monitoring
+  - LID Mapping
+  - Connection Health
+  - Diagnostics
 license: MIT
-repository-code: "https://github.com/luoarch/baileys-store-core"
-url: "https://github.com/luoarch/baileys-store-core"
-abstract: "Production-grade authentication state management library for Baileys v7.0+ with hybrid Redis/MongoDB storage, circuit breaker protection, transactional outbox pattern, and thread-safe Prometheus metrics. Fixes critical RC.6 serialization bugs and provides production-ready reliability."
+repository-code: 'https://github.com/luoarch/baileys-store-core'
+url: 'https://github.com/luoarch/baileys-store-core'
+abstract: 'Production-grade authentication state management library for Baileys v7.0+ with hybrid Redis/MongoDB storage, circuit breaker protection, transactional outbox pattern, and thread-safe Prometheus metrics. Fixes critical RC.6 serialization bugs and provides production-ready reliability.'
 references:
   - type: software
-    title: "Baileys - Lightweight TypeScript WhatsApp Web API"
+    title: 'Baileys - Lightweight TypeScript WhatsApp Web API'
     authors:
-      - name: "WhiskeySockets"
-    url: "https://github.com/WhiskeySockets/Baileys"
-    version: "7.0.0-rc.6"
+      - name: 'WhiskeySockets'
+    url: 'https://github.com/WhiskeySockets/Baileys'
+    version: '7.0.0-rc.9'
   - type: book
-    title: "Release It! Design and Deploy Production-Ready Software"
+    title: 'Release It! Design and Deploy Production-Ready Software'
     authors:
-      - family-names: "Nygard"
-        given-names: "Michael"
-    publisher: "Pragmatic Bookshelf"
+      - family-names: 'Nygard'
+        given-names: 'Michael'
+    publisher: 'Pragmatic Bookshelf'
     year: 2018
-    isbn: "978-1680502398"
+    isbn: '978-1680502398'
   - type: book
-    title: "Designing Data-Intensive Applications"
+    title: 'Designing Data-Intensive Applications'
     authors:
-      - family-names: "Kleppmann"
-        given-names: "Martin"
+      - family-names: 'Kleppmann'
+        given-names: 'Martin'
     publisher: "O'Reilly Media"
     year: 2017
-    isbn: "978-1449373320"
+    isbn: '978-1449373320'
 preferred-citation:
   type: generic
-  title: "@luoarch/baileys-store-core: Production-Grade Authentication State Management for Baileys v7.0+"
+  title: '@luoarch/baileys-store-core: Production-Grade Authentication State Management for Baileys v7.0+'
   authors:
-    - family-names: "Moraes"
-      given-names: "Lucas"
+    - family-names: 'Moraes'
+      given-names: 'Lucas'
   year: 2025
-  url: "https://github.com/luoarch/baileys-store-core"
-
+  url: 'https://github.com/luoarch/baileys-store-core'

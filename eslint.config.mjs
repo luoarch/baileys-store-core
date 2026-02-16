@@ -11,24 +11,43 @@ export default tseslint.config(
       '**/coverage/**',
       '**/build/**',
       '**/.tsup/**',
+      '**/.stryker-tmp/**', // Stryker mutation testing temporary files
       '**/examples/**',
       '**/test-scripts/**',
+      'k6-load-test.js', // k6 script com APIs próprias
       '.git/**',
       '.husky/**',
-      '.idea/**'
+      '.idea/**',
     ],
   },
 
   // 2) Base configs
   eslint.configs.recommended,
 
+  // 2.5) Scripts JS - Node environment
+  {
+    files: ['scripts/**/*.js'],
+    languageOptions: {
+      globals: {
+        console: 'readonly',
+        process: 'readonly',
+        Buffer: 'readonly',
+        __dirname: 'readonly',
+        __filename: 'readonly',
+        require: 'readonly',
+        module: 'readonly',
+        exports: 'readonly',
+      },
+    },
+    rules: {
+      'no-undef': 'off',
+    },
+  },
+
   // 3) Strict type-checked for TypeScript source files ONLY
   {
     files: ['src/**/*.ts'],
-    extends: [
-      ...tseslint.configs.strictTypeChecked,
-      ...tseslint.configs.stylisticTypeChecked,
-    ],
+    extends: [...tseslint.configs.strictTypeChecked, ...tseslint.configs.stylisticTypeChecked],
     languageOptions: {
       parserOptions: {
         projectService: true,
@@ -37,7 +56,7 @@ export default tseslint.config(
     },
     linterOptions: {
       reportUnusedDisableDirectives: 'warn',
-      noInlineConfig: false
+      noInlineConfig: false,
     },
     rules: {
       // Type Safety
@@ -61,12 +80,12 @@ export default tseslint.config(
       ],
       '@typescript-eslint/no-unused-vars': [
         'error',
-        { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }
+        { argsIgnorePattern: '^_', varsIgnorePattern: '^_' },
       ],
 
       // Gerais
       'no-debugger': 'error',
-      'no-console': ['warn', { allow: ['warn', 'error', 'debug'] }]
+      'no-console': ['warn', { allow: ['warn', 'error', 'debug'] }],
     },
   },
 
@@ -85,7 +104,7 @@ export default tseslint.config(
       '*.config.cjs',
       'commitlint.config.js',
       'vitest*.config.ts',
-      'tsup.config.ts'
+      'tsup.config.ts',
     ],
     extends: [tseslint.configs.disableTypeChecked],
     rules: {
@@ -145,9 +164,16 @@ export default tseslint.config(
     files: ['scripts/**/*.ts', 'scripts/**/*.js', 'test-scripts/**/*.ts'],
     extends: [tseslint.configs.disableTypeChecked],
     languageOptions: {
+      parser: tseslint.parser,
+      globals: {
+        console: 'readonly',
+        process: 'readonly',
+        Buffer: 'readonly',
+        __dirname: 'readonly',
+        __filename: 'readonly',
+      },
       parserOptions: {
         projectService: false,
-        parser: '@typescript-eslint/parser',
         ecmaVersion: 'latest',
         sourceType: 'module',
       },
@@ -180,7 +206,7 @@ export default tseslint.config(
     rules: {
       '@typescript-eslint/no-explicit-any': 'off',
       '@typescript-eslint/consistent-type-imports': 'off',
-      'no-console': 'off'
-    }
-  }
+      'no-console': 'off',
+    },
+  },
 );

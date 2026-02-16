@@ -1,0 +1,49 @@
+{
+  "version": "1.0.0",
+  "patterns": {
+    "deprecated_code": [
+      {
+        "pattern": "\\bConsoleLogger\\b",
+        "replacement": "StructuredLogger",
+        "reason": "@deprecated in src/types/index.ts:202"
+      },
+      {
+        "pattern": "\\.getMetrics\\(\\)",
+        "replacement": ".getMetricsRegistry()",
+        "reason": "@deprecated in src/hybrid/store.ts:624"
+      },
+      {
+        "pattern": "\\.resetMetrics\\(\\)",
+        "replacement": "N/A",
+        "reason": "Prometheus metrics are cumulative"
+      }
+    ],
+    "inclusive_language": [
+      {
+        "pattern": "\\bmaster\\b(?![Kk]ey|-key|_key| [Kk]ey)",
+        "replacement": "primary/main",
+        "reason": "Inclusive terminology"
+      },
+      {
+        "pattern": "\\bslave\\b",
+        "replacement": "replica/secondary",
+        "reason": "Inclusive terminology"
+      },
+      {
+        "pattern": "\\bblacklist\\b",
+        "replacement": "denylist",
+        "reason": "Inclusive terminology"
+      },
+      {
+        "pattern": "\\bwhitelist\\b",
+        "replacement": "allowlist",
+        "reason": "Inclusive terminology"
+      }
+    ]
+  },
+  "exclude": ["node_modules", "dist", "coverage", ".stryker-tmp", "*.md", "denylist.json"],
+  "severity": {
+    "deprecated_code": "warning",
+    "inclusive_language": "error"
+  }
+}

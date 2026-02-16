@@ -134,7 +134,7 @@ describe('MongoDB Store Utils', () => {
     });
 
     it('deve lidar com erro de duplicação', () => {
-      const error = new Error('Duplicate key');
+      const error = new Error('Duplicate key') as Error & { code: number };
       error.code = 11000;
       expect(error.code).toBe(11000);
     });
@@ -205,7 +205,7 @@ describe('MongoDB Store Utils', () => {
 
       // Simulate cleanup
       const expired = Array.from(cache.entries())
-        .filter(([key, value]) => now - value.timestamp > 300000) // 5 minutes
+        .filter(([, value]) => now - value.timestamp > 300000) // 5 minutes
         .map(([key]) => key);
 
       expired.forEach((key) => cache.delete(key));

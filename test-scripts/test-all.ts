@@ -34,11 +34,21 @@ function printMenu() {
   console.log('      - Features: Hot cache + Cold storage, best of both');
   console.log('');
 
-  console.log('  4️⃣  Run All Tests (Sequential)');
-  console.log('      - Runs all three tests one after another');
+  console.log('  4️⃣  Kafka Write-Behind Test');
+  console.log('      - Storage: Hybrid + Kafka');
+  console.log('      - Features: Async write-behind with Kafka producer');
   console.log('');
 
-  console.log('  5️⃣  Exit');
+  console.log('  5️⃣  NPM Import Test');
+  console.log('      - Validates published package from npm');
+  console.log('      - Tests: Import from @luoarch/baileys-store-core@rc');
+  console.log('');
+
+  console.log('  6️⃣  Run All Tests (Sequential)');
+  console.log('      - Runs all tests one after another');
+  console.log('');
+
+  console.log('  7️⃣  Exit');
   console.log('');
   console.log('═'.repeat(80) + '\n');
 }
@@ -68,7 +78,13 @@ async function runAllTests() {
   console.log('🔄 Running all tests sequentially...');
   console.log('═'.repeat(80) + '\n');
 
-  const tests = ['test-redis-detailed.ts', 'test-mongodb-detailed.ts', 'test-hybrid-detailed.ts'];
+  const tests = [
+    'test-redis.ts',
+    'test-mongodb.ts',
+    'test-hybrid.ts',
+    'test-kafka.ts',
+    'test-from-npm.ts',
+  ];
 
   for (const test of tests) {
     try {
@@ -113,39 +129,47 @@ async function main() {
     printMenu();
 
     const choice = await new Promise<string>((resolve) => {
-      rl.question('Enter your choice (1-5): ', resolve);
+      rl.question('Enter your choice (1-7): ', resolve);
     });
 
     try {
       switch (choice.trim()) {
         case '1':
-          await runTest('test-redis-detailed.ts');
+          await runTest('test-redis.ts');
           break;
 
         case '2':
-          await runTest('test-mongodb-detailed.ts');
+          await runTest('test-mongodb.ts');
           break;
 
         case '3':
-          await runTest('test-hybrid-detailed.ts');
+          await runTest('test-hybrid.ts');
           break;
 
         case '4':
-          await runAllTests();
+          await runTest('test-kafka.ts');
           break;
 
         case '5':
+          await runTest('test-from-npm.ts');
+          break;
+
+        case '6':
+          await runAllTests();
+          break;
+
+        case '7':
           console.log('\n👋 Goodbye!\n');
           running = false;
           break;
 
         default:
-          console.log('\n❌ Invalid choice. Please select 1-5.\n');
+          console.log('\n❌ Invalid choice. Please select 1-7.\n');
           await new Promise((resolve) => setTimeout(resolve, 2000));
           continue;
       }
 
-      if (running && choice !== '4') {
+      if (running && choice !== '6') {
         console.log('\n' + '─'.repeat(80));
         const again = await new Promise<string>((resolve) => {
           rl.question('\nRun another test? (y/n): ', resolve);

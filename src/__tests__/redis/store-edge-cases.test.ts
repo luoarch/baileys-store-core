@@ -9,7 +9,6 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { type RedisAuthStore } from '../../redis/store.js';
-import { StorageError } from '../../types/index.js';
 import type { RedisStoreConfig } from '../../redis/store.js';
 
 // Mock do ioredis
@@ -33,34 +32,22 @@ vi.mock('ioredis', () => {
   };
 });
 
-// Mock do CryptoService
-const mockCrypto = {
-  encrypt: vi.fn().mockResolvedValue({
-    ciphertext: Buffer.from('encrypted'),
-    nonce: Buffer.from('nonce'),
-    keyId: 'key1',
-    schemaVersion: 1,
-    timestamp: new Date(),
-  }),
-  decrypt: vi.fn().mockResolvedValue(Buffer.from('decrypted')),
-};
-
-// Mock do CodecService
-const mockCodec = {
-  encode: vi.fn().mockResolvedValue(Buffer.from('encoded')),
-  decode: vi.fn().mockResolvedValue({ test: 'data' }),
-};
-
 describe('RedisAuthStore Edge Cases', () => {
-  let store: RedisAuthStore;
+  let store: RedisAuthStore | undefined;
   let config: RedisStoreConfig;
 
   beforeEach(() => {
     config = {
       host: 'localhost',
       port: 6379,
-      ttl: { defaultTtl: 86400 },
+      ttl: {
+        defaultTtl: 86400,
+        credsTtl: 86400,
+        keysTtl: 86400,
+        lockTtl: 5,
+      },
       resilience: {
+        operationTimeout: 5000,
         maxRetries: 3,
         retryBaseDelay: 1000,
         retryMultiplier: 2,
@@ -149,11 +136,6 @@ describe('RedisAuthStore Edge Cases', () => {
     it('deve configurar event handlers corretamente', () => {
       // Testar apenas a configuração dos event handlers sem instanciar RedisAuthStore
       const mockOn = vi.fn();
-      const mockRedis = {
-        on: mockOn,
-        ping: vi.fn(),
-        quit: vi.fn(),
-      };
 
       // Simular configuração de event handlers
       mockOn('error', vi.fn());
@@ -180,9 +162,6 @@ describe('RedisAuthStore Edge Cases', () => {
           30000,
         );
       };
-
-      // Simular falha de conexão
-      const connectionError = new Error('Connection failed');
 
       // Testar se a estratégia de retry funciona
       expect(retryStrategy(1)).toBe(2000);

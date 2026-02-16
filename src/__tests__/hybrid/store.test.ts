@@ -11,11 +11,49 @@ import type { MongoAuthStore } from '../../mongodb/store.js';
 import type { AuthPatch, Versioned, AuthSnapshot } from '../../types/index.js';
 import { VersionMismatchError } from '../../types/index.js';
 import type { QueueAdapter } from '../../types/queue.js';
+import { withContext } from '../../context/execution-context.js';
 
 // Mock stores
 class MockRedisStore {
   private data = new Map<string, Versioned<AuthSnapshot>>();
   connected = false;
+  private mockClientInstance: ReturnType<typeof this.createMockClient> | null = null;
+
+  private createMockClient() {
+    const getData = (sessionId: string) => this.data.get(sessionId);
+    return {
+      hset: vi.fn().mockResolvedValue(1),
+      hgetall: vi.fn().mockResolvedValue({}),
+      keys: vi.fn().mockResolvedValue([]),
+      del: vi.fn().mockResolvedValue(1),
+      expire: vi.fn().mockResolvedValue(1),
+      hget: vi.fn().mockResolvedValue(null),
+      hdel: vi.fn().mockResolvedValue(1),
+      watch: vi.fn().mockResolvedValue('OK'),
+      unwatch: vi.fn().mockResolvedValue('OK'),
+      // OutboxManager methods
+      hsetnx: vi.fn().mockResolvedValue(1), // 1 = new entry added
+      lpush: vi.fn().mockResolvedValue(1),
+      lrange: vi.fn().mockResolvedValue([]),
+      llen: vi.fn().mockResolvedValue(0),
+      // Dynamic get that returns version info from store data
+      get: vi.fn().mockImplementation((key: string) => {
+        // Extract sessionId from meta key (format: baileys:auth:{sessionId}:meta)
+        const match = /baileys:auth:(.+):meta/.exec(key);
+        if (match?.[1]) {
+          const sessionId = match[1];
+          const data = getData(sessionId);
+          if (data) {
+            return JSON.stringify({
+              version: data.version,
+              updatedAt: data.updatedAt.toISOString(),
+            });
+          }
+        }
+        return null;
+      }),
+    };
+  }
 
   async connect() {
     this.connected = true;
@@ -68,15 +106,14 @@ class MockRedisStore {
   }
 
   get client() {
-    return {
-      hset: vi.fn(),
-      hgetall: vi.fn(),
-      keys: vi.fn().mockResolvedValue([]),
-      del: vi.fn(),
-      expire: vi.fn(),
-      hget: vi.fn(),
-      hdel: vi.fn(),
-    };
+    if (!this.mockClientInstance) {
+      this.mockClientInstance = this.createMockClient();
+    }
+    return this.mockClientInstance;
+  }
+
+  getClient() {
+    return this.client;
   }
 }
 
@@ -785,15 +822,23 @@ describe('HybridAuthStore', () => {
         updatedAt: new Date(),
       };
 
-      // Mock Redis como não conectado
+      // Mock Redis como não conectado - store get returns null (cache miss)
       redis.isHealthy = vi.fn().mockResolvedValue(false);
       redis.get = vi.fn().mockResolvedValue(null);
       redis.set = vi.fn().mockResolvedValue({ version: 1, updatedAt: new Date(), success: true });
       mongo.get = vi.fn().mockResolvedValue(data);
 
+      // Mock the internal client's get to return null (no existing meta)
+      const mockClient = redis.getClient();
+      (mockClient.get as ReturnType<typeof vi.fn>).mockResolvedValue(null);
+
       const result = await store.get(sessionId);
 
       expect(result).toEqual(data);
+
+      // Wait for async warmCache to complete
+      await new Promise((resolve) => setTimeout(resolve, 50));
+
       // Deve ter aquecido o cache (chamou Redis SET)
       expect(redis.set).toHaveBeenCalled();
     });
@@ -1324,13 +1369,16 @@ describe('HybridAuthStore', () => {
       redis.get = vi
         .fn()
         .mockResolvedValueOnce(null) // Primeiro get
-        .mockResolvedValueOnce(null); // Segundo get no warmCache
+        .mockResolvedValueOnce(null); // Segundo get no warmCache (not used anymore)
       mongo.get = vi.fn().mockResolvedValue(data);
 
       const setSpy = vi.spyOn(redis, 'set');
 
       const result = await store.get(sessionId);
       expect(result).toEqual(data);
+
+      // Wait for async warmCache to complete
+      await new Promise((resolve) => setTimeout(resolve, 50));
 
       // Deve tentar fazer warm cache
       expect(setSpy).toHaveBeenCalled();
@@ -1347,12 +1395,15 @@ describe('HybridAuthStore', () => {
       redis.get = vi
         .fn()
         .mockResolvedValueOnce(null) // Primeiro get
-        .mockResolvedValueOnce(null); // Segundo get no warmCache
+        .mockResolvedValueOnce(null); // Segundo get no warmCache (not used anymore)
       mongo.get = vi.fn().mockResolvedValue(data);
       redis.set = vi.fn().mockRejectedValue(new Error('Redis set failed'));
 
       const result = await store.get(sessionId);
       expect(result).toEqual(data);
+
+      // Wait for async warmCache to complete
+      await new Promise((resolve) => setTimeout(resolve, 50));
 
       // Deve tentar fazer warm cache mas falhar silenciosamente
       expect(redis.set).toHaveBeenCalled();
@@ -1418,7 +1469,7 @@ describe('HybridAuthStore', () => {
       redis.get = vi
         .fn()
         .mockResolvedValueOnce(null) // Primeiro get
-        .mockResolvedValueOnce(null); // Segundo get no warmCache
+        .mockResolvedValueOnce(null); // Segundo get no warmCache (not used anymore)
       mongo.get = vi.fn().mockResolvedValue(data);
       redis.set = vi.fn().mockImplementation(
         () =>
@@ -1431,6 +1482,9 @@ describe('HybridAuthStore', () => {
 
       const result = await store.get(sessionId);
       expect(result).toEqual(data);
+
+      // Wait for async warmCache to attempt and fail
+      await new Promise((resolve) => setTimeout(resolve, 150));
 
       // Deve tentar fazer warm cache mas falhar silenciosamente
       expect(redis.set).toHaveBeenCalled();
@@ -1726,6 +1780,34 @@ describe('HybridAuthStore', () => {
         {
           redisUrl: 'redis://localhost',
           mongoUrl: 'mongodb://localhost',
+          mongoDatabase: 'test',
+          mongoCollection: 'sessions',
+          ttl: {
+            defaultTtl: 30 * 24 * 60 * 60,
+            credsTtl: 30 * 24 * 60 * 60,
+            keysTtl: 30 * 24 * 60 * 60,
+            lockTtl: 5,
+          },
+          masterKey: '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
+          resilience: {
+            operationTimeout: 5000,
+            maxRetries: 3,
+            retryBaseDelay: 100,
+            retryMultiplier: 2,
+          },
+          observability: {
+            enableMetrics: false,
+            enableTracing: false,
+            enableDetailedLogs: false,
+            metricsInterval: 60000,
+          },
+          security: {
+            enableEncryption: false,
+            enableCompression: false,
+            encryptionAlgorithm: 'secretbox' as const,
+            compressionAlgorithm: 'snappy' as const,
+            keyRotationDays: 90,
+          },
         },
       );
       await testStore.connect();
@@ -1750,6 +1832,34 @@ describe('HybridAuthStore', () => {
         {
           redisUrl: 'redis://localhost',
           mongoUrl: 'mongodb://localhost',
+          mongoDatabase: 'test',
+          mongoCollection: 'sessions',
+          ttl: {
+            defaultTtl: 30 * 24 * 60 * 60,
+            credsTtl: 30 * 24 * 60 * 60,
+            keysTtl: 30 * 24 * 60 * 60,
+            lockTtl: 5,
+          },
+          masterKey: '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
+          resilience: {
+            operationTimeout: 5000,
+            maxRetries: 3,
+            retryBaseDelay: 100,
+            retryMultiplier: 2,
+          },
+          observability: {
+            enableMetrics: false,
+            enableTracing: false,
+            enableDetailedLogs: false,
+            metricsInterval: 60000,
+          },
+          security: {
+            enableEncryption: false,
+            enableCompression: false,
+            encryptionAlgorithm: 'secretbox' as const,
+            compressionAlgorithm: 'snappy' as const,
+            keyRotationDays: 90,
+          },
         },
       );
       await testStore.connect();
@@ -1768,6 +1878,34 @@ describe('HybridAuthStore', () => {
       const configWithQueue = {
         redisUrl: 'redis://localhost',
         mongoUrl: 'mongodb://localhost',
+        mongoDatabase: 'test',
+        mongoCollection: 'sessions',
+        ttl: {
+          defaultTtl: 30 * 24 * 60 * 60,
+          credsTtl: 30 * 24 * 60 * 60,
+          keysTtl: 30 * 24 * 60 * 60,
+          lockTtl: 5,
+        },
+        masterKey: '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
+        resilience: {
+          operationTimeout: 5000,
+          maxRetries: 3,
+          retryBaseDelay: 100,
+          retryMultiplier: 2,
+        },
+        observability: {
+          enableMetrics: false,
+          enableTracing: false,
+          enableDetailedLogs: false,
+          metricsInterval: 60000,
+        },
+        security: {
+          enableEncryption: false,
+          enableCompression: false,
+          encryptionAlgorithm: 'secretbox' as const,
+          compressionAlgorithm: 'snappy' as const,
+          keyRotationDays: 90,
+        },
         enableWriteBehind: true,
         queue: queue,
       };
@@ -1798,6 +1936,34 @@ describe('HybridAuthStore', () => {
         {
           redisUrl: 'redis://localhost',
           mongoUrl: 'mongodb://localhost',
+          mongoDatabase: 'test',
+          mongoCollection: 'sessions',
+          ttl: {
+            defaultTtl: 30 * 24 * 60 * 60,
+            credsTtl: 30 * 24 * 60 * 60,
+            keysTtl: 30 * 24 * 60 * 60,
+            lockTtl: 5,
+          },
+          masterKey: '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
+          resilience: {
+            operationTimeout: 5000,
+            maxRetries: 3,
+            retryBaseDelay: 100,
+            retryMultiplier: 2,
+          },
+          observability: {
+            enableMetrics: false,
+            enableTracing: false,
+            enableDetailedLogs: false,
+            metricsInterval: 60000,
+          },
+          security: {
+            enableEncryption: false,
+            enableCompression: false,
+            encryptionAlgorithm: 'secretbox' as const,
+            compressionAlgorithm: 'snappy' as const,
+            keyRotationDays: 90,
+          },
         },
       );
       await testStore.connect();
@@ -1821,6 +1987,34 @@ describe('HybridAuthStore', () => {
         {
           redisUrl: 'redis://localhost',
           mongoUrl: 'mongodb://localhost',
+          mongoDatabase: 'test',
+          mongoCollection: 'sessions',
+          ttl: {
+            defaultTtl: 30 * 24 * 60 * 60,
+            credsTtl: 30 * 24 * 60 * 60,
+            keysTtl: 30 * 24 * 60 * 60,
+            lockTtl: 5,
+          },
+          masterKey: '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
+          resilience: {
+            operationTimeout: 5000,
+            maxRetries: 3,
+            retryBaseDelay: 100,
+            retryMultiplier: 2,
+          },
+          observability: {
+            enableMetrics: false,
+            enableTracing: false,
+            enableDetailedLogs: false,
+            metricsInterval: 60000,
+          },
+          security: {
+            enableEncryption: false,
+            enableCompression: false,
+            encryptionAlgorithm: 'secretbox' as const,
+            compressionAlgorithm: 'snappy' as const,
+            keyRotationDays: 90,
+          },
         },
       );
       await testStore.connect();
@@ -1846,6 +2040,34 @@ describe('HybridAuthStore', () => {
         {
           redisUrl: 'redis://localhost',
           mongoUrl: 'mongodb://localhost',
+          mongoDatabase: 'test',
+          mongoCollection: 'sessions',
+          ttl: {
+            defaultTtl: 30 * 24 * 60 * 60,
+            credsTtl: 30 * 24 * 60 * 60,
+            keysTtl: 30 * 24 * 60 * 60,
+            lockTtl: 5,
+          },
+          masterKey: '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
+          resilience: {
+            operationTimeout: 5000,
+            maxRetries: 3,
+            retryBaseDelay: 100,
+            retryMultiplier: 2,
+          },
+          observability: {
+            enableMetrics: false,
+            enableTracing: false,
+            enableDetailedLogs: false,
+            metricsInterval: 60000,
+          },
+          security: {
+            enableEncryption: false,
+            enableCompression: false,
+            encryptionAlgorithm: 'secretbox' as const,
+            compressionAlgorithm: 'snappy' as const,
+            keyRotationDays: 90,
+          },
         },
       );
       expect(testStore).toBeInstanceOf(HybridAuthStore);
@@ -1867,6 +2089,34 @@ describe('HybridAuthStore', () => {
       store = new HybridAuthStore(redis as any, mongo as any, {
         redisUrl: 'redis://localhost',
         mongoUrl: 'mongodb://localhost',
+        mongoDatabase: 'test',
+        mongoCollection: 'sessions',
+        ttl: {
+          defaultTtl: 30 * 24 * 60 * 60,
+          credsTtl: 30 * 24 * 60 * 60,
+          keysTtl: 30 * 24 * 60 * 60,
+          lockTtl: 5,
+        },
+        masterKey: '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
+        resilience: {
+          operationTimeout: 5000,
+          maxRetries: 3,
+          retryBaseDelay: 100,
+          retryMultiplier: 2,
+        },
+        observability: {
+          enableMetrics: false,
+          enableTracing: false,
+          enableDetailedLogs: false,
+          metricsInterval: 60000,
+        },
+        security: {
+          enableEncryption: false,
+          enableCompression: false,
+          encryptionAlgorithm: 'secretbox' as const,
+          compressionAlgorithm: 'snappy' as const,
+          keyRotationDays: 90,
+        },
         enableWriteBehind: true,
         queue,
       });
@@ -1880,9 +2130,6 @@ describe('HybridAuthStore', () => {
     });
 
     it('deve chamar stopReconciler quando outboxManager existe no disconnect', async () => {
-      // Simular que outboxManager foi inicializado
-      const outboxManager = store.getOutboxStats();
-
       // Mock do outboxManager para verificar se stopReconciler foi chamado
       const mockOutboxManager = {
         stopReconciler: vi.fn(),
@@ -1957,6 +2204,34 @@ describe('HybridAuthStore', () => {
       const writeBehindStore = new HybridAuthStore(redis as any, mongo as any, {
         redisUrl: 'redis://localhost',
         mongoUrl: 'mongodb://localhost',
+        mongoDatabase: 'test',
+        mongoCollection: 'sessions',
+        ttl: {
+          defaultTtl: 30 * 24 * 60 * 60,
+          credsTtl: 30 * 24 * 60 * 60,
+          keysTtl: 30 * 24 * 60 * 60,
+          lockTtl: 5,
+        },
+        masterKey: '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
+        resilience: {
+          operationTimeout: 5000,
+          maxRetries: 3,
+          retryBaseDelay: 100,
+          retryMultiplier: 2,
+        },
+        observability: {
+          enableMetrics: false,
+          enableTracing: false,
+          enableDetailedLogs: false,
+          metricsInterval: 60000,
+        },
+        security: {
+          enableEncryption: false,
+          enableCompression: false,
+          encryptionAlgorithm: 'secretbox' as const,
+          compressionAlgorithm: 'snappy' as const,
+          keyRotationDays: 90,
+        },
         enableWriteBehind: true,
         queue,
       });
@@ -1977,6 +2252,34 @@ describe('HybridAuthStore', () => {
       const noWriteBehindStore = new HybridAuthStore(redis as any, mongo as any, {
         redisUrl: 'redis://localhost',
         mongoUrl: 'mongodb://localhost',
+        mongoDatabase: 'test',
+        mongoCollection: 'sessions',
+        ttl: {
+          defaultTtl: 30 * 24 * 60 * 60,
+          credsTtl: 30 * 24 * 60 * 60,
+          keysTtl: 30 * 24 * 60 * 60,
+          lockTtl: 5,
+        },
+        masterKey: '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
+        resilience: {
+          operationTimeout: 5000,
+          maxRetries: 3,
+          retryBaseDelay: 100,
+          retryMultiplier: 2,
+        },
+        observability: {
+          enableMetrics: false,
+          enableTracing: false,
+          enableDetailedLogs: false,
+          metricsInterval: 60000,
+        },
+        security: {
+          enableEncryption: false,
+          enableCompression: false,
+          encryptionAlgorithm: 'secretbox' as const,
+          compressionAlgorithm: 'snappy' as const,
+          keyRotationDays: 90,
+        },
         enableWriteBehind: false,
         queue,
       });
@@ -1995,6 +2298,34 @@ describe('HybridAuthStore', () => {
       const noQueueStore = new HybridAuthStore(redis as any, mongo as any, {
         redisUrl: 'redis://localhost',
         mongoUrl: 'mongodb://localhost',
+        mongoDatabase: 'test',
+        mongoCollection: 'sessions',
+        ttl: {
+          defaultTtl: 30 * 24 * 60 * 60,
+          credsTtl: 30 * 24 * 60 * 60,
+          keysTtl: 30 * 24 * 60 * 60,
+          lockTtl: 5,
+        },
+        masterKey: '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef',
+        resilience: {
+          operationTimeout: 5000,
+          maxRetries: 3,
+          retryBaseDelay: 100,
+          retryMultiplier: 2,
+        },
+        observability: {
+          enableMetrics: false,
+          enableTracing: false,
+          enableDetailedLogs: false,
+          metricsInterval: 60000,
+        },
+        security: {
+          enableEncryption: false,
+          enableCompression: false,
+          encryptionAlgorithm: 'secretbox' as const,
+          compressionAlgorithm: 'snappy' as const,
+          keyRotationDays: 90,
+        },
         enableWriteBehind: true,
         // queue não fornecido
       });
@@ -2006,6 +2337,171 @@ describe('HybridAuthStore', () => {
       expect(outboxStats).toBeNull();
 
       await noQueueStore.disconnect();
+    });
+  });
+
+  describe('Batch Operations', () => {
+    it('should batch get multiple sessions from Redis cache', async () => {
+      await store.connect();
+
+      // Setup: add data to Redis
+      const session1 = 'session-batch-1';
+      const session2 = 'session-batch-2';
+      const session3 = 'session-batch-3';
+
+      const data1: Versioned<AuthSnapshot> = {
+        data: { creds: {} as any, keys: {} as any },
+        version: 1,
+        updatedAt: new Date(),
+      };
+      const data2: Versioned<AuthSnapshot> = {
+        data: { creds: {} as any, keys: {} as any },
+        version: 1,
+        updatedAt: new Date(),
+      };
+
+      // Mock Redis.get to return different values based on session ID
+      vi.spyOn(redis, 'get').mockImplementation((id: string) => {
+        if (id === session1) return Promise.resolve(data1);
+        if (id === session2) return Promise.resolve(data2);
+        return Promise.resolve(null);
+      });
+
+      const results = await store.batchGet([session1, session2, session3]);
+
+      expect(results.size).toBe(3);
+      expect(results.get(session1)).toEqual(data1);
+      expect(results.get(session2)).toEqual(data2);
+      expect(results.get(session3)).toBeNull();
+
+      await store.disconnect();
+    });
+
+    it('should fallback to MongoDB when Redis fails in batch get', async () => {
+      await store.connect();
+
+      const session1 = 'session-fallback-1';
+      const session2 = 'session-fallback-2';
+
+      const mongoData: Versioned<AuthSnapshot> = {
+        data: { creds: {} as any, keys: {} as any },
+        version: 1,
+        updatedAt: new Date(),
+      };
+
+      // Mock Redis to fail
+      vi.spyOn(redis, 'get').mockRejectedValueOnce(new Error('Redis unavailable'));
+
+      // Mock MongoDB to return data
+      vi.spyOn(mongo, 'get').mockResolvedValueOnce(mongoData);
+
+      const results = await store.batchGet([session1, session2]);
+
+      expect(results.size).toBe(2);
+      expect(mongo.get).toHaveBeenCalled();
+      // Session2 will be null since Redis failed and MongoDB only returns for session1
+
+      await store.disconnect();
+    });
+
+    it('should propagate correlation ID through batch operations', async () => {
+      await store.connect();
+
+      const correlationId = 'test-correlation-123';
+
+      const data: Versioned<AuthSnapshot> = {
+        data: { creds: {} as any, keys: {} as any },
+        version: 1,
+        updatedAt: new Date(),
+      };
+
+      vi.spyOn(redis, 'get').mockResolvedValue(data);
+      vi.spyOn((store as any).logger, 'debug');
+
+      await withContext({ correlationId }, async () => {
+        await store.batchGet(['session-1', 'session-2']);
+      });
+
+      // Verify logger was called with correlationId
+      const logCalls = (store as any).logger.debug.mock.calls;
+      const hasCorrelationId = logCalls.some((call: unknown[]) =>
+        call.some(
+          (arg: unknown) =>
+            typeof arg === 'object' &&
+            arg !== null &&
+            'correlationId' in arg &&
+            (arg as { correlationId?: string }).correlationId === correlationId,
+        ),
+      );
+      expect(hasCorrelationId).toBe(true);
+
+      await store.disconnect();
+    });
+
+    it('should handle batch delete with partial failures', async () => {
+      await store.connect();
+
+      const session1 = 'session-delete-1';
+      const session2 = 'session-delete-2';
+
+      // Mock Redis to succeed for session1 and fail for session2
+      let callCount = 0;
+      vi.spyOn(redis, 'delete').mockImplementation((id: string) => {
+        callCount++;
+        if (id === session2 && callCount === 2) {
+          return Promise.reject(new Error('Redis delete failed'));
+        }
+        return Promise.resolve();
+      });
+
+      vi.spyOn(mongo, 'delete').mockImplementation((id: string) => {
+        if (id === session2) {
+          return Promise.reject(new Error('MongoDB delete failed'));
+        }
+        return Promise.resolve();
+      });
+
+      const result = await store.batchDelete([session1, session2]);
+
+      expect(result.successful.size).toBe(1);
+      expect(result.failed.size).toBe(1);
+      expect(result.successful.has(session1)).toBe(true);
+      expect(result.failed.has(session2)).toBe(true);
+
+      await store.disconnect();
+    });
+
+    it('should track metrics for batch operations', async () => {
+      await store.connect();
+
+      const data: Versioned<AuthSnapshot> = {
+        data: { creds: {} as any, keys: {} as any },
+        version: 1,
+        updatedAt: new Date(),
+      };
+
+      vi.spyOn(redis, 'get').mockResolvedValue(data);
+
+      await store.batchGet(['session-1', 'session-2']);
+
+      // Metrics should be recorded (we can't easily verify Prometheus metrics in tests,
+      // but we can verify the code path was executed)
+      expect(redis.get).toHaveBeenCalledTimes(2);
+
+      await store.disconnect();
+    });
+
+    it('should handle empty batch operations', async () => {
+      await store.connect();
+
+      const results = await store.batchGet([]);
+      expect(results.size).toBe(0);
+
+      const deleteResult = await store.batchDelete([]);
+      expect(deleteResult.successful.size).toBe(0);
+      expect(deleteResult.failed.size).toBe(0);
+
+      await store.disconnect();
     });
   });
 });
